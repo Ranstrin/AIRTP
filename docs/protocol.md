@@ -1,4 +1,4 @@
-# IRTP Protocol Specification
+# AIRTP Protocol Specification
 
 **Version:** 0.1 (Experimental)
 **Status:** Draft Specification
@@ -7,9 +7,9 @@
 
 # Abstract
 
-The Intelligent Realtime Transport Protocol (IRTP) defines an application-layer protocol for interactive Artificial Intelligence systems.
+The Intelligent Realtime Transport Protocol (AIRTP) defines an application-layer protocol for interactive Artificial Intelligence systems.
 
-IRTP provides a provider-independent communication protocol that separates AI application logic from transport implementation details. The protocol standardizes session establishment, capability negotiation, message framing, chunk management, streaming, and orderly session termination.
+AIRTP provides a provider-independent communication protocol that separates AI application logic from transport implementation details. The protocol standardizes session establishment, capability negotiation, message framing, chunk management, streaming, and orderly session termination.
 
 The protocol is transport agnostic and may operate over WebSocket, HTTP streaming, local sockets, named pipes, or future transport implementations.
 
@@ -17,7 +17,7 @@ The protocol is transport agnostic and may operate over WebSocket, HTTP streamin
 
 # 1. Goals
 
-IRTP has six primary goals.
+AIRTP has six primary goals.
 
 1. Transport independence
 2. AI provider independence
@@ -30,13 +30,13 @@ IRTP has six primary goals.
 
 # 2. Protocol Model
 
-IRTP operates as a layered protocol.
+AIRTP operates as a layered protocol.
 
 ```text
 Application
       │
       ▼
-IRTP Protocol
+AIRTP Protocol
       │
       ▼
 Transport
@@ -47,7 +47,7 @@ Remote Endpoint
 
 The protocol does not define transport reliability.
 
-Instead, IRTP assumes the selected transport provides ordered message delivery or exposes ordering information.
+Instead, AIRTP assumes the selected transport provides ordered message delivery or exposes ordering information.
 
 ---
 
@@ -129,7 +129,7 @@ Required fields:
 
 | Field     | Description               |
 | --------- | ------------------------- |
-| version   | IRTP protocol version     |
+| version   | AIRTP protocol version     |
 | session   | Session identifier        |
 | sequence  | Monotonic sequence number |
 | timestamp | Unix timestamp            |
@@ -140,7 +140,7 @@ Required fields:
 
 # 7. Message Types
 
-IRTP defines logical message categories.
+AIRTP defines logical message categories.
 
 ## CONNECT
 
@@ -324,9 +324,9 @@ The protocol intentionally separates streaming from transport implementation.
 
 # 12. Provider Adapters
 
-IRTP does not define provider-specific semantics.
+AIRTP does not define provider-specific semantics.
 
-Instead, provider adapters translate between provider APIs and IRTP.
+Instead, provider adapters translate between provider APIs and AIRTP.
 
 Example
 
@@ -337,7 +337,7 @@ OpenAI Realtime
  OpenAI Adapter
         │
         ▼
-      IRTP
+      AIRTP
 ```
 
 Another provider:
@@ -349,10 +349,10 @@ Future Provider
  Provider Adapter
         │
         ▼
-      IRTP
+      AIRTP
 ```
 
-Applications communicate only with IRTP.
+Applications communicate only with AIRTP.
 
 ---
 
@@ -388,7 +388,7 @@ Provider
 
 # 14. Transport Independence
 
-IRTP intentionally avoids assumptions regarding transport.
+AIRTP intentionally avoids assumptions regarding transport.
 
 Supported transports may include:
 
@@ -497,7 +497,7 @@ The protocol is intentionally extensible while preserving compatibility with exi
 
 # 19. Reference Implementation
 
-The IRTP reference implementation demonstrates the protocol using a modular transport architecture with interchangeable provider adapters.
+The AIRTP reference implementation demonstrates the protocol using a modular transport architecture with interchangeable provider adapters.
 
 The implementation is intended as a research platform for experimentation, interoperability, and protocol evolution rather than a finalized networking standard.
 
@@ -507,5 +507,5 @@ The implementation is intended as a research platform for experimentation, inter
 
 > Applications should communicate with a protocol rather than a provider.
 
-IRTP treats AI communication as a protocol engineering problem, allowing transport implementations, model providers, and application logic to evolve independently while maintaining a consistent session-oriented communication model.
+AIRTP treats AI communication as a protocol engineering problem, allowing transport implementations, model providers, and application logic to evolve independently while maintaining a consistent session-oriented communication model.
 
