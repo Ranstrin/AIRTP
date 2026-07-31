@@ -24,6 +24,7 @@ AIRTP separates application intelligence from transport mechanics.
 
 ## Architecture
 
+```text
 Application
 |
 v
@@ -36,7 +37,7 @@ OpenAI Adapter Local Model Adapter
 |
 v
 WebSocket TLS Transport
-
+```
 
 ## Example
 
@@ -50,6 +51,7 @@ await session.connect()
 response = await session.send(
     "Hello AI"
 )
+```
 Protocol Concepts
 Envelope
 

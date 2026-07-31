@@ -17,49 +17,55 @@ Likewise, transport implementations should communicate with remote services with
 
 This separation provides:
 
-modularity
-provider independence
-transport independence
-protocol extensibility
-simplified application development
-reusable communication infrastructure
-Layered Architecture
-                    Application Layer
-         +------------------------------------+
-         | CLI / GUI / Services / Automation  |
-         +------------------------------------+
-                      |
-                      |
-                AIRTP Session Layer
-         +------------------------------------+
-         | Session Management                 |
-         | Capability Negotiation             |
-         | Metadata Management                |
-         | Envelope Construction              |
-         +------------------------------------+
-                      |
-                      |
-               Protocol Layer
-         +------------------------------------+
-         | Chunk Management                   |
-         | Message Ordering                   |
-         | Fragment Reassembly                |
-         | Stream Control                     |
-         +------------------------------------+
-                      |
-                      |
-              Transport Interface
-         +------------------------------------+
-         | Generic Transport API              |
-         +------------------------------------+
-                      |
-          +-----------+-----------+
-          |                       |
-          |                       |
-  WebSocket Transport     Local Transport
-          |                       |
-          |                       |
-     Remote AI Service      Local Runtime
+```text
+Application Layer
+
++------------------------------------+
+| CLI / GUI / Services / Automation  |
++------------------------------------+
+                  |
+                  v
+AIRTP Session Layer
++------------------------------------+
+| Session Management                 |
+| Capability Negotiation             |
+| Metadata Management                |
+| Envelope Construction              |
++------------------------------------+
+                  |
+                  v
+Protocol Layer
++------------------------------------+
+| Chunk Management                   |
+| Message Ordering                   |
+| Fragment Reassembly                |
+| Stream Control                     |
++------------------------------------+
+                  |
+                  v
+Transport Interface
++------------------------------------+
+| Generic Transport API              |
++------------------------------------+
+          |
+   +------+------+
+   |             |
+   v             v
+WebSocket     Local Transport
+Transport
+   |             |
+   v             v
+Remote AI    Local Runtime
+
+Design Objectives
+
+- Modularity
+- Provider Independence
+- Transport Independence
+- Protocol Extensibility
+- Simplified Application Development
+- Reusable Communication Infrastructure
+```
 Design Objectives
 
 The architecture is designed around several primary objectives.
@@ -75,7 +81,7 @@ Provider Independence
 No application code should require modification when replacing one AI provider with another.
 
 Example:
-
+```text
 Application
       |
       |
@@ -86,6 +92,7 @@ AIRTP Session
 OpenAI Adapter         Local Adapter
       |                      |
 Realtime API         Local Model Runtime
+```
 Session Abstraction
 
 Every communication channel is represented as an abstract session.
@@ -210,7 +217,7 @@ request serialization
 response parsing
 
 Example:
-
+```text
 AIRTP Session
       |
       |
@@ -221,7 +228,7 @@ Model Interface
 OpenAI Adapter              Local Adapter
       |                            |
 Realtime API             Local Runtime
-
+```
 Applications remain unaware of provider-specific implementation details.
 
 Session Lifecycle
