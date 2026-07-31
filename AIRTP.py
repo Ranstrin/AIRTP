@@ -29,6 +29,7 @@ import os
 
 from dataclasses import dataclass, field
 from typing import Dict, Any
+from websockets.exceptions import ConnectionClosed
 
 @dataclass
 class AIRTPConfig:
@@ -478,41 +479,47 @@ class WebSocketTransport:
     
         ssl_context = ssl.create_default_context()
     
-        print(
-            "Connecting:",
-            self.endpoint,
-            flush=True
-        )
+        #print(
+            #"Connecting:",
+            #self.endpoint,
+            #flush=True
+        #)
         
-        print(
-            "Headers:",
-            [
-                (
-                    key,
-                            "***" if key == "Authorization" else value
-        )
-                for key, value in headers
-            ],
-            flush=True
-        )
+        #print(
+        #    "Headers:",
+        #    [
+        #        (
+        #            key,
+        #                    "***" if key == "Authorization" else value
+        #)
+        #        for key, value in headers
+        #    ],
+        #    flush=True
+        #)
         
         
         self.socket = await websockets.connect(
             self.endpoint,
             extra_headers=headers,
-            ssl=ssl_context
+            ssl=ssl_context,
+            ping_interval=20,
+            ping_timeout=20,
+            close_timeout=10,
         )
 
 
 
     async def send(self, message):
 
+        #print("SEND RAW:", message, flush=True)
         await self.socket.send(message)
 
 
     async def receive(self):
-    
-        return await self.socket.recv()
+        try:
+            return await self.socket.recv()
+        except ConnectionClosed:
+            return None
     
     
     async def close(self):
@@ -523,15 +530,6 @@ class WebSocketTransport:
 
             self.socket = None
 
-
-
-    async def close(self):
-
-
-        if self.socket:
-
-
-            await self.socket.close()
 
 
 
@@ -558,29 +556,18 @@ class OpenAIRealtimeAdapter:
 
 
     async def initialize(self, transport):
-        
-        session_event = {
-            "type": "session.update",
-            "session": {
-                "instructions": (
-                    "You are connected through an AIRTP transport layer. "
-                    "Transport metadata and chunking are handled externally."
-                ),
-                "modalities": [
-                    "text"
-                ]
-            }
-        }
-    
-        print(
-            "SEND:",
-            json.dumps(session_event, indent=2),
-        flush=True
-        )
-    
-        await transport.send(
-            json.dumps(session_event)
-        )
+
+        #
+        # Transport establishment is complete.
+        #
+        # AIRTP capability negotiation belongs to the AIRTP protocol layer,
+        # not the provider transport.
+        #
+            # The OpenAI Realtime service already emits "session.created"
+        # immediately after connection. There is no provider initialization
+        # required here for basic text exchanges.
+        #
+        return
 
 
     async def send_message(
@@ -589,54 +576,32 @@ class OpenAIRealtimeAdapter:
 
         transport,
 
-        message
+        envelope
 
     ):
 
-
+        #
+        # Translate AIRTP envelope into an OpenAI request.
+        #
+        text = envelope["payload"]["content"]
 
         event = {
 
+            "type": "conversation.item.create",
+    
+            "item": {
 
-            "type":
+                "type": "message",
 
-                "conversation.item.create",
+                "role": "user",
 
-
-
-            "item":
-
-            {
-
-
-                "type":
-
-                    "message",
-
-
-
-                "role":
-
-                    "user",
-
-
-
-                "content":
-
-                [
+                "content": [
 
                     {
 
+                        "type": "input_text",
 
-                    "type":
-
-                        "input_text",
-
-
-
-                    "text":
-
-                        message
+                        "text": text
 
                     }
 
@@ -646,33 +611,25 @@ class OpenAIRealtimeAdapter:
 
         }
 
+        try:
 
-
-        await transport.send(
-
-            json.dumps(event)
-
-        )
-
-
-
-        await transport.send(
-
-            json.dumps(
-
-                {
-
-                    "type":
-
-                        "response.create"
-
-                }
-
+            #print("SENDING USER MESSAGE", flush=True)
+            await transport.send(
+                json.dumps(event)
             )
 
-        )
+            await transport.send(
+                json.dumps({
+                    "type": "response.create"
+                })
+            )
 
+        except Exception as exc:
 
+            raise RuntimeError(
+                f"Provider send failed: {exc}"
+            )
+        
 
     async def receive_message(
 
@@ -689,60 +646,74 @@ class OpenAIRealtimeAdapter:
 
         while True:
 
-
             raw = await transport.receive()
 
-
+            if raw is None:
+                raise RuntimeError("Transport closed")
 
             event = json.loads(raw)
 
+            event_type = event.get("type")
 
+            #print("EVENT:", event_type)
 
-            event_type = event.get(
-
-                "type"
-
-            )
-
-
-
-            if event_type == (
-
-                "response.output_text.delta"
-
+            #
+            # Ignore protocol/session bookkeeping.
+            #
+            if event_type in (
+                "session.created",
+                "session.updated",
+                "rate_limits.updated",
+                "conversation.item.added",
+                "conversation.item.done",
+                "response.created",
+                "response.output_item.added",
+                "response.content_part.added",
+                "response.output_audio.delta",
+                "response.output_audio.done",
             ):
-
-
-                output.append(
-
-                    event.get(
-
-                        "delta",
-
-                        ""
-
-                    )
-
+                continue
+        
+            #
+            # Provider error.
+            #
+            if event_type == "error":
+                raise RuntimeError(
+                    event["error"]["message"]
                 )
-
-
-
-            elif event_type == (
-
-                "response.done"
-
-            ):
-
-
-                break
-
-
-
-        return "".join(output)
-
-
-
-
+        
+            #
+            # Text models.
+            #
+            if event_type == "response.output_text.delta":
+                output.append(
+                    event.get("delta", "")
+                )
+                continue
+        
+            #
+            # Audio models expose the transcript here.
+            #
+            if event_type == "response.output_audio_transcript.delta":
+                output.append(
+                    event.get("delta", "")
+                )
+                continue
+        
+            #
+            # Some models send the completed text.
+            #
+            if event_type == "response.output_text.done":
+                text = event.get("text")
+                if text:
+                    output.append(text)
+                continue
+        
+            #
+            # Response complete.
+            #
+            if event_type == "response.done":
+                return "".join(output)
 # ============================================================
 # AIRTP Session
 # ============================================================
@@ -750,34 +721,17 @@ class OpenAIRealtimeAdapter:
 
 class AIRTPSession:
 
-
     def __init__(
-
         self,
-
         transport,
-
         adapter
-
     ):
 
-
         self.transport = transport
-
         self.adapter = adapter
-
-        self.capabilities = (
-
-            CapabilityNegotiator()
-
-        )
-
+        self.capabilities = CapabilityNegotiator()
         self.chunker = ChunkManager()
-
         self.envelopes = EnvelopeFactory()
-
-
-
 
     async def start(self):
 
@@ -786,87 +740,30 @@ class AIRTPSession:
         await self.adapter.initialize(
             self.transport
         )
-    
-        try:
-            while True:
-                message = await self.transport.receive()
-                print(
-                    "SERVER:",
-                    message,
-                    flush=True
-                )
-
-        except Exception as e:
-            print(
-                "SERVER CLOSED:",
-                e
-            )
 
     async def send_logical_message(
-
         self,
-
         message
-
     ):
 
+        chunks = self.chunker.split(message)
 
-        chunks = (
+        assembled = self.chunker.assemble(chunks)
 
-            self.chunker
-
-            .split(message)
-
+        envelope = self.envelopes.create(
+            "MODEL_REQUEST",
+            {
+                "content": assembled
+            }
         )
-
-
-
-        assembled = (
-
-            self.chunker
-
-            .assemble(chunks)
-
-        )
-
-
-
-        envelope = (
-
-            self.envelopes
-
-            .create(
-
-                "MODEL_REQUEST",
-
-                {
-
-                    "content":
-
-                        assembled
-
-                }
-
-            )
-
-        )
-
-
 
         await self.adapter.send_message(
-
             self.transport,
-
-            json.dumps(envelope)
-
+            envelope
         )
 
-
-
         return await self.adapter.receive_message(
-
             self.transport
-
         )
 
 # ============================================================
@@ -919,13 +816,13 @@ class InteractiveShell:
     async def interactive(self):
 
 
-        print(
+        #print(
 
-            "AIRTP session ready",
+            #"AIRTP session ready",
 
-            flush=True
+            #flush=True
 
-        )
+        #)
 
 
 
@@ -935,11 +832,7 @@ class InteractiveShell:
             try:
 
 
-                text = input(
-
-                    "> "
-
-                )
+                text = await asyncio.to_thread(input, "> ")
 
 
             except EOFError:
@@ -1089,38 +982,6 @@ def parse_arguments():
 
 async def main():
 
-
-    args = parse_arguments()
-
-
-
-    transport = WebSocketTransport(
-
-        endpoint=args.endpoint,
-
-        api_key=args.api_key,
-
-        verify_tls=(
-
-            not args.no_tls_verify
-
-        )
-
-    )
-
-
-
-    adapter = OpenAIRealtimeAdapter(
-
-        model=args.model
-
-    )
-
-
-
-
-async def main():
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -1156,15 +1017,10 @@ async def main():
 
     await session.start()
 
-    await shell.run()
-
 
     try:
 
-
         await shell.run()
-
-
 
     finally:
 
@@ -1416,15 +1272,15 @@ class StreamingReceiver:
                 )
 
 
-                print(
+                #print(
 
-                    delta,
+                    #delta,
 
-                    end="",
+                    #end="",
 
-                    flush=True
+                    #flush=True
 
-                )
+                #)
 
 
 
