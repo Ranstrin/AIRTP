@@ -7,7 +7,7 @@
 
 # Abstract
 
-The Intelligent Realtime Transport Protocol (AIRTP) Transport Layer defines the interface responsible for establishing, maintaining, and terminating communication channels between an AIRTP session and a remote endpoint.
+The AIRTP Intelligent Realtime Transport Protocol (AIRTP) Transport Layer defines the interface responsible for establishing, maintaining, and terminating communication channels between an AIRTP session and a remote endpoint.
 
 The transport layer is intentionally isolated from application semantics and protocol interpretation. Its sole responsibility is the reliable movement of serialized protocol messages between endpoints.
 

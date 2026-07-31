@@ -7,7 +7,7 @@
 
 # Abstract
 
-The Intelligent Realtime Transport Protocol (AIRTP) defines an application-layer protocol for interactive Artificial Intelligence systems.
+The AIRTP Intelligent Realtime Transport Protocol (AIRTP) defines an application-layer protocol for interactive Artificial Intelligence systems.
 
 AIRTP provides a provider-independent communication protocol that separates AI application logic from transport implementation details. The protocol standardizes session establishment, capability negotiation, message framing, chunk management, streaming, and orderly session termination.
 
