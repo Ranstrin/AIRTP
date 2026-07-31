@@ -630,90 +630,83 @@ class OpenAIRealtimeAdapter:
                 f"Provider send failed: {exc}"
             )
         
+async def receive_message(
 
-    async def receive_message(
+    self,
 
-        self,
+    transport
 
-        transport
+):
 
-    ):
+    output = []
 
+    while True:
 
-        output = []
+        raw = await transport.receive()
 
+        if raw is None:
+            raise RuntimeError("Transport closed")
 
+        event = json.loads(raw)
 
-        while True:
+        event_type = event.get("type")
 
-            raw = await transport.receive()
+        #
+        # Provider bookkeeping.
+        #
+        if event_type.startswith("session."):
+            continue
 
-            if raw is None:
-                raise RuntimeError("Transport closed")
+        if event_type.startswith("conversation."):
+            continue
 
-            event = json.loads(raw)
+        if event_type.startswith("rate_limits."):
+            continue
 
-            event_type = event.get("type")
+        #
+        # Provider errors.
+        #
+        if event_type == "error":
+            raise RuntimeError(
+                event["error"]["message"]
+            )
 
-            #print("EVENT:", event_type)
+        #
+        # Normalize every provider text delta into AIRTP text.
+        #
+        delta = None
 
-            #
-            # Ignore protocol/session bookkeeping.
-            #
-            if event_type in (
-                "session.created",
-                "session.updated",
-                "rate_limits.updated",
-                "conversation.item.added",
-                "conversation.item.done",
-                "response.created",
-                "response.output_item.added",
-                "response.content_part.added",
-                "response.output_audio.delta",
-                "response.output_audio.done",
-            ):
-                continue
-        
-            #
-            # Provider error.
-            #
-            if event_type == "error":
-                raise RuntimeError(
-                    event["error"]["message"]
-                )
-        
-            #
-            # Text models.
-            #
-            if event_type == "response.output_text.delta":
-                output.append(
-                    event.get("delta", "")
-                )
-                continue
-        
-            #
-            # Audio models expose the transcript here.
-            #
-            if event_type == "response.output_audio_transcript.delta":
-                output.append(
-                    event.get("delta", "")
-                )
-                continue
-        
-            #
-            # Some models send the completed text.
-            #
-            if event_type == "response.output_text.done":
-                text = event.get("text")
-                if text:
-                    output.append(text)
-                continue
-        
-            #
-            # Response complete.
-            #
-            if event_type == "response.done":
-                return "".join(output)
+        if event_type == "response.output_text.delta":
+            delta = event.get("delta")
+
+        elif event_type == "response.output_audio_transcript.delta":
+            delta = event.get("delta")
+
+        elif event_type == "response.output_text.done":
+            delta = event.get("text")
+
+        if delta:
+            output.append(delta)
+            continue
+
+        #
+        # Ignore non-text provider media.
+        #
+        if event_type.startswith("response.output_audio"):
+            continue
+
+        if event_type.startswith("response.content_part"):
+            continue
+
+        if event_type.startswith("response.output_item"):
+            continue
+
+        #
+        # Logical response complete.
+        #
+        if event_type == "response.done":
+            return "".join(output)
+
 # ============================================================
 # AIRTP Session
 # ============================================================
