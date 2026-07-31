@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+(
+cat <<'PROMPT_START'
+You are refactoring a working Python project named AIRTP.
+
+The following file content is the current working reference implementation.
+
+Your goal is to refactor it into a GitHub-ready multi-file repository while preserving behavior exactly.
+
+Rules:
+
+- Extract, do not rewrite.
+- Preserve runtime behavior.
+- Preserve command-line arguments.
+- Preserve environment variables.
+- Preserve async execution.
+- Preserve initialization order.
+- Preserve object ownership.
+- Preserve message formats.
+
+The current AIRTP.py must remain the source of truth.
+
+Analyze first:
+
+1. Classes
+2. Functions
+3. Imports
+4. Runtime entry point
+5. Dependency graph
+6. Initialization sequence
+
+Preserve this execution chain:
+
+command line
+    |
+    v
+configuration
+    |
+    v
+transport
+    |
+    v
+adapter
+    |
+    v
+session
+    |
+    v
+shell
+    |
+    v
+asyncio.run(main())
+
+Create this repository:
+
+AIRTP/
+├── README.md
+├── LICENSE
+├── ARCHITECTURE.md
+├── PROTOCOL.md
+├── TRANSPORT.md
+├── EXAMPLES.md
+├── CHANGELOG.md
+├── pyproject.toml
+├── requirements.txt
+│
+├── src/
+│   └── airtp/
+│       ├── __init__.py
+│       ├── config.py
+│       ├── session.py
+│       ├── protocol.py
+│       ├── envelope.py
+│       ├── capabilities.py
+│       ├── errors.py
+│       ├── logging.py
+│       ├── shell.py
+│       │
+│       ├── transport/
+│       │   ├── base.py
+│       │   └── websocket.py
+│       │
+│       └── adapters/
+│           └── openai_realtime.py
+│
+├── examples/
+└── tests/
+
+Extraction requirements:
+
+- Move existing code into modules.
+- Maintain existing class behavior.
+- Maintain existing method signatures.
+- Maintain async behavior.
+- Maintain imports or replace with correct imports.
+- Do not remove functionality.
+
+Configuration:
+
+Move:
+- command line parsing
+- endpoint configuration
+- OPENAI_API_KEY handling
+
+into config.py.
+
+Transport:
+
+Move WebSocket handling into:
+
+transport/websocket.py
+
+Provider logic:
+
+Move OpenAI-specific logic into:
+
+adapters/openai_realtime.py
+
+The core AIRTP protocol must not depend directly on OpenAI.
+
+Validation:
+
+After every extraction step:
+
+python -m py_compile
+
+then:
+
+python AIRTP.py
+
+Verify:
+
+- startup
+- authentication
+- transport connection
+- session creation
+- shell operation
+
+Do not continue after failures.
+
+Deliver:
+
+- repository tree
+- migration map
+- extracted modules
+- imports
+- tests
+- documentation
+
+The final project must behave identically to the original AIRTP.py.
+
+===== BEGIN AIRTP.py =====
+
+PROMPT_START
+
+cat "$SCRIPT_DIR/../../AIRTP.py"
+
+cat <<'PROMPT_END'
+
+===== END AIRTP.py =====
+
+Now perform the refactor.
+
+PROMPT_END
+
+) | "$SCRIPT_DIR/../../AIRTP.py"

@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+(
+cat <<'PROMPT_START'
+
+You are modifying the working AIRTP project.
+
+The AIRTP.py source provided below is the reference implementation.
+
+Your task is to add configurable usage controls and rate limiting while preserving all existing functionality.
+
+IMPORTANT:
+- Do not rewrite working transport/session logic.
+- Do not change protocol message formats.
+- Do not change authentication behavior.
+- Do not change the existing CLI behavior unless adding optional configuration flags.
+- Do not remove existing capabilities.
+- Extract clean abstractions where appropriate.
+
+Before modifying:
+
+Analyze:
+- session lifecycle
+- transport send/receive path
+- adapter boundaries
+- configuration loading
+- existing async execution flow
+
+Preserve:
+
+asyncio.run(main())
+
+and all existing startup/shutdown behavior.
+
+---
+
+Implement AIRTP usage controls.
+
+Create a rate limiting subsystem:
+
+Suggested location:
+
+src/airtp/ratelimit.py
+
+Containing:
+
+- request rate limiting
+- token/session budget tracking
+- concurrent session limits
+- configurable policies
+
+---
+
+Required capabilities:
+
+## 1. Request rate limiting
+
+Support:
+
+- requests per time window
+- configurable window size
+- graceful rejection
+
+Example:
+
+MAX_REQUESTS_PER_MINUTE=5
+
+Behavior:
+
+If the limit is exceeded:
+
+- do not send the request upstream
+- return a clear AIRTP error
+- preserve session stability
+
+---
+
+## 2. Session token budget
+
+Add optional session limits:
+
+Example:
+
+MAX_SESSION_TOKENS=10000
+
+Track:
+
+- input tokens if available
+- output tokens if available
+- total session usage
+
+When exceeded:
+
+- notify the session
+- close gracefully
+- do not crash the transport layer
+
+---
+
+## 3. Concurrent session limits
+
+Support:
+
+Example:
+
+MAX_ACTIVE_SESSIONS=1
+
+Prevent accidental resource exhaustion.
+
+---
+
+## 4. Configuration
+
+Add configuration support:
+
+Environment variables:
+
+AIRTP_MAX_REQUESTS_PER_MINUTE
+AIRTP_MAX_SESSION_TOKENS
+AIRTP_MAX_ACTIVE_SESSIONS
+
+Defaults should be development-friendly:
+
+AIRTP_MAX_REQUESTS_PER_MINUTE=5
+AIRTP_MAX_SESSION_TOKENS=10000
+AIRTP_MAX_ACTIVE_SESSIONS=1
+
+Existing behavior should remain unchanged when limits are not configured.
+
+---
+
+## 5. Development mode
+
+Add:
+
+AIRTP_MODE=development
+
+Development mode should enable conservative defaults.
+
+Production mode should allow user configuration.
+
+---
+
+## 6. Provider independence
+
+The rate limiter belongs to AIRTP.
+
+Do not put rate limiting logic inside:
+
+- OpenAI adapter
+- WebSocket transport
+
+The architecture should remain:
+
+Application
+
+    |
+
+AIRTP Session
+
+    |
+
+Rate Limiter
+
+    |
+
+Provider Adapter
+
+    |
+
+Transport
+
+
+---
+
+## 7. Documentation
+
+Add or update:
+
+README.md
+
+ARCHITECTURE.md
+
+with:
+
+- why rate limiting exists
+- configuration examples
+- development defaults
+- production recommendations
+
+---
+
+## 8. Validation
+
+After changes:
+
+Run:
+
+python -m py_compile
+
+Then:
+
+python AIRTP.py
+
+Verify:
+
+- application starts
+- connection works
+- normal sessions work
+- rate limits reject correctly
+- shutdown remains clean
+
+Do not sacrifice existing functionality.
+
+---
+
+===== BEGIN AIRTP.py REFERENCE IMPLEMENTATION =====
+
+PROMPT_START
+
+cat "$SCRIPT_DIR/../../AIRTP.py"
+
+cat <<'PROMPT_END'
+
+===== END AIRTP.py REFERENCE IMPLEMENTATION =====
+
+Implement the changes now.
+
+PROMPT_END
+
+) | "$SCRIPT_DIR/../../AIRTP.py"

@@ -1,0 +1,63 @@
+AIRTP — AIRTP Intelligent Realtime Transport Protocol
+
+Copyright (c) 2026 Trey
+
+This repository contains the reference implementation of AIRTP (AIRTP Intelligent Realtime Transport Protocol), an open-source experimental protocol for transport-independent AI communication.
+
+AIRTP explores a layered architecture that separates AI model interfaces from the underlying transport, enabling applications to communicate with AI services through a consistent protocol abstraction. The project investigates concepts including transport abstraction, capability negotiation, session lifecycle management, structured message envelopes, chunk metadata and reassembly, and provider-agnostic model interfaces.
+
+The software is intended as a research and educational reference implementation demonstrating how AI communication can be treated as a protocol engineering problem rather than a provider-specific API integration. The architecture is designed to isolate application logic from transport implementation details while supporting interchangeable AI backends through a common session interface.
+
+The following software is licensed under the MIT License.
+MIT License
+
+Copyright (c) 2026 Trey
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Copyright (c) 2026 Trey
+
+AIRTP (AIRTP Intelligent Realtime Transport Protocol)
+
+All original source code, protocol specifications, documentation,
+architectural designs, and supporting materials in this repository are
+copyright © 2026 Trey unless otherwise noted.
+
+This project is distributed under the terms of the MIT License. See the
+LICENSE file for the complete license text.
+
+AIRTP — AIRTP Intelligent Realtime Transport Protocol
+
+Copyright (c) 2026 Trey
+
+This project is an original implementation of a transport abstraction
+architecture intended for AI interoperability. Any trademarks, product
+names, or service names referenced in examples remain the property of
+their respective owners and are used solely for interoperability and
+demonstration purposes.
+
+This software is licensed under the MIT License.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
