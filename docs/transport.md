@@ -1,4 +1,4 @@
-# IRTP Transport Layer Specification
+# AIRTP Transport Layer Specification
 
 **Version:** 0.1 (Experimental)
 **Status:** Draft Specification
@@ -7,11 +7,11 @@
 
 # Abstract
 
-The Intelligent Realtime Transport Protocol (IRTP) Transport Layer defines the interface responsible for establishing, maintaining, and terminating communication channels between an IRTP session and a remote endpoint.
+The Intelligent Realtime Transport Protocol (AIRTP) Transport Layer defines the interface responsible for establishing, maintaining, and terminating communication channels between an AIRTP session and a remote endpoint.
 
 The transport layer is intentionally isolated from application semantics and protocol interpretation. Its sole responsibility is the reliable movement of serialized protocol messages between endpoints.
 
-Transport implementations may include WebSocket, HTTP streaming, TCP, Unix domain sockets, named pipes, local process communication, or future transport mechanisms without requiring changes to the IRTP protocol itself.
+Transport implementations may include WebSocket, HTTP streaming, TCP, Unix domain sockets, named pipes, local process communication, or future transport mechanisms without requiring changes to the AIRTP protocol itself.
 
 ---
 
@@ -37,13 +37,13 @@ The transport layer is designed around the following principles:
 
                      ▼
 
-             IRTP Session Layer
+             AIRTP Session Layer
 
                      │
 
                      ▼
 
-              IRTP Protocol Layer
+              AIRTP Protocol Layer
 
                      │
 
@@ -107,7 +107,7 @@ receive()
 close()
 ```
 
-These operations define the transport contract used by the IRTP session manager.
+These operations define the transport contract used by the AIRTP session manager.
 
 ---
 
@@ -194,7 +194,7 @@ Application
 
       ▼
 
-IRTP Session
+AIRTP Session
 
       │
 
@@ -248,7 +248,7 @@ Application
 
       ▼
 
-IRTP
+AIRTP
 
       │
 
@@ -263,13 +263,13 @@ Local Socket
 Model Runtime
 ```
 
-The remainder of the IRTP stack remains unchanged.
+The remainder of the AIRTP stack remains unchanged.
 
 ---
 
 # 10. Transport Independence
 
-IRTP intentionally avoids dependence on any specific networking technology.
+AIRTP intentionally avoids dependence on any specific networking technology.
 
 Potential transport implementations include:
 
@@ -298,7 +298,7 @@ Examples:
 * Local Authentication
 * Future authentication mechanisms
 
-Authentication metadata should never appear inside IRTP protocol payloads.
+Authentication metadata should never appear inside AIRTP protocol payloads.
 
 ---
 
@@ -307,7 +307,7 @@ Authentication metadata should never appear inside IRTP protocol payloads.
 Transport implementations move serialized messages only.
 
 ```text
-IRTP Message
+AIRTP Message
 
       │
 
@@ -331,7 +331,7 @@ Deserialize
 
       │
 
-IRTP Message
+AIRTP Message
 ```
 
 The transport layer does not inspect application payloads.
@@ -340,7 +340,7 @@ The transport layer does not inspect application payloads.
 
 # 13. Reliability
 
-IRTP delegates transport reliability to the selected implementation.
+AIRTP delegates transport reliability to the selected implementation.
 
 Typical transport guarantees may include:
 
@@ -421,7 +421,7 @@ Application
 
       │
 
-IRTP Session
+AIRTP Session
 
       │
 
@@ -500,7 +500,7 @@ API keys, bearer tokens, and authentication material should be stored securely a
 
 The transport layer exists to move bytes—not to understand them.
 
-By separating transport mechanics from protocol semantics, IRTP allows session management, capability negotiation, and AI provider integration to evolve independently of the underlying communication technology.
+By separating transport mechanics from protocol semantics, AIRTP allows session management, capability negotiation, and AI provider integration to evolve independently of the underlying communication technology.
 
 This separation enables the same application and protocol implementation to operate across multiple transports while maintaining a consistent programming model, reducing coupling, improving portability, and encouraging interoperability across AI ecosystems.
 

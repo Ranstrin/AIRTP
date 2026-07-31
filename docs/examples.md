@@ -1,17 +1,17 @@
-# IRTP Examples
+# AIRTP Examples
 
 **Version:** 0.1 (Experimental)
 
-This document provides practical examples demonstrating how applications interact with the Intelligent Realtime Transport Protocol (IRTP). The examples focus on the IRTP programming model rather than any specific AI provider implementation.
+This document provides practical examples demonstrating how applications interact with the AIRTP Intelligent Realtime Transport Protocol (AIRTP). The examples focus on the AIRTP programming model rather than any specific AI provider implementation.
 
 ---
 
 # Example 1 — Creating a Session
 
-Every interaction begins by creating an IRTP session.
+Every interaction begins by creating an AIRTP session.
 
 ```python
-from irtp import Session
+from AIRTP import Session
 
 session = Session(
     endpoint="wss://provider.example/realtime"
@@ -59,7 +59,7 @@ while True:
 await session.close()
 ```
 
-IRTP manages the session lifecycle while presenting a simple request/response interface to the application.
+AIRTP manages the session lifecycle while presenting a simple request/response interface to the application.
 
 ---
 
@@ -99,7 +99,7 @@ Example capability advertisement:
 }
 ```
 
-Applications typically do not perform capability negotiation directly; the IRTP session manager handles this automatically.
+Applications typically do not perform capability negotiation directly; the AIRTP session manager handles this automatically.
 
 ---
 
@@ -119,7 +119,7 @@ Large logical messages may be transmitted as multiple chunks.
 }
 ```
 
-IRTP performs message reassembly before exposing the completed message to the application.
+AIRTP performs message reassembly before exposing the completed message to the application.
 
 ---
 
@@ -153,7 +153,7 @@ Switching AI providers requires replacing only the provider adapter.
 Application
       │
       ▼
-IRTP Session
+AIRTP Session
       │
       ▼
 OpenAI Adapter
@@ -168,7 +168,7 @@ Later:
 Application
       │
       ▼
-IRTP Session
+AIRTP Session
       │
       ▼
 Local Adapter
@@ -232,15 +232,15 @@ try:
         prompt
     )
 
-except IRTPTransportError:
+except AIRTPTransportError:
 
     print("Transport unavailable.")
 
-except IRTPProtocolError:
+except AIRTPProtocolError:
 
     print("Protocol violation.")
 
-except IRTPApplicationError:
+except AIRTPApplicationError:
 
     print("Application rejected request.")
 ```
@@ -251,7 +251,7 @@ Separating errors by layer allows applications to implement appropriate recovery
 
 # Example 12 — Custom Transport
 
-Developers may implement new transports by conforming to the IRTP transport interface.
+Developers may implement new transports by conforming to the AIRTP transport interface.
 
 ```python
 class CustomTransport(Transport):
@@ -269,13 +269,13 @@ class CustomTransport(Transport):
         ...
 ```
 
-No modifications to the IRTP protocol layer are required.
+No modifications to the AIRTP protocol layer are required.
 
 ---
 
 # Example 13 — Envelope Construction
 
-Every application message is wrapped in an IRTP envelope before transmission.
+Every application message is wrapped in an AIRTP envelope before transmission.
 
 ```json
 {
@@ -322,7 +322,7 @@ Each session maintains independent sequencing, capabilities, and transport state
 
                          ▼
 
-                  IRTP Session API
+                  AIRTP Session API
 
                          │
 
@@ -370,13 +370,13 @@ Application
 Provider API
 ```
 
-IRTP introduces an abstraction layer.
+AIRTP introduces an abstraction layer.
 
 ```text
 Application
       │
       ▼
-IRTP
+AIRTP
       │
       ▼
 Provider Adapter
@@ -385,13 +385,13 @@ Provider Adapter
 Provider
 ```
 
-The application depends only on IRTP, enabling transport and provider implementations to evolve independently.
+The application depends only on AIRTP, enabling transport and provider implementations to evolve independently.
 
 ---
 
 # Summary
 
-These examples demonstrate the core design philosophy of IRTP:
+These examples demonstrate the core design philosophy of AIRTP:
 
 * applications communicate with sessions rather than transports
 * transports move serialized protocol messages without interpreting them
@@ -401,5 +401,5 @@ These examples demonstrate the core design philosophy of IRTP:
 * session management provides a consistent programming model
 * transport independence allows the same application to operate across multiple communication mechanisms
 
-By maintaining clear boundaries between application logic, protocol semantics, transport mechanics, and provider-specific behavior, IRTP provides a reusable foundation for interoperable AI communication.
+By maintaining clear boundaries between application logic, protocol semantics, transport mechanics, and provider-specific behavior, AIRTP provides a reusable foundation for interoperable AI communication.
 
