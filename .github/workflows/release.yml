@@ -1,0 +1,66 @@
+name: AIRTP Release
+
+on:
+  workflow_dispatch:
+
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify AIRTP.py
+        run: |
+          python -m py_compile AIRTP.py
+
+      - name: Build Release Artifacts
+        run: |
+          chmod +x scripts/build-release.sh
+          scripts/build-release.sh "${{ github.ref_name }}"
+
+      - name: Generate Provenance Subjects
+        id: hash
+        run: |
+          set -euo pipefail
+
+          files=$(find release -type f | sort)
+
+          echo "hashes=$(sha256sum $files | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: airtp-release
+          path: release/
+
+  provenance:
+    needs: build
+
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+
+    with:
+      base64-subjects: "${{ needs.build.outputs.hashes }}"
+      upload-assets: true
