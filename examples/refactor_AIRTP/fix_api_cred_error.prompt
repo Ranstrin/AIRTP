@@ -1,0 +1,1 @@
+echo "comprehend $(cat README.md) read $(find ./docs/ | xargs cat) modify $(cat AIRTP.py) to produce a error message like $(cat error) in order to allow the user to understaind what vairable name to export too without direclty passing the token on the commandline option. this is the $(cat error_stacktrace)" that is currenty unclear | ./AIRTP.py 

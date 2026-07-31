@@ -992,10 +992,19 @@ async def main():
 
     endpoint = args.endpoint
 
+    api_key= args.api_key or os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        example_path = "~/your_secure.key"
+        raise RuntimeError(
+            f"OpenAI API key required. You can set it by exporting the environment variable, e.g.,\n"
+            f'  export OPENAI_API_KEY="$(cat {example_path})"'
+        )
+
     transport = WebSocketTransport(
         endpoint=endpoint,
-        api_key= args.api_key or os.environ.get("OPENAI_API_KEY")
+        api_key= api_key
     )
+
 
     adapter = OpenAIRealtimeAdapter()
 
