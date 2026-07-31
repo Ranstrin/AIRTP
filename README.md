@@ -51,6 +51,7 @@ await session.connect()
 response = await session.send(
     "Hello AI"
 )
+```
 Protocol Concepts
 Envelope
 
