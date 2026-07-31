@@ -630,82 +630,82 @@ class OpenAIRealtimeAdapter:
                 f"Provider send failed: {exc}"
             )
         
-async def receive_message(
+    async def receive_message(
 
-    self,
+        self,
 
-    transport
+        transport
 
-):
+    ):
 
-    output = []
+        output = []
 
-    while True:
+        while True:
 
-        raw = await transport.receive()
+            raw = await transport.receive()
 
-        if raw is None:
-            raise RuntimeError("Transport closed")
+            if raw is None:
+                raise RuntimeError("Transport closed")
 
-        event = json.loads(raw)
+            event = json.loads(raw)
 
-        event_type = event.get("type")
+            event_type = event.get("type")
 
-        #
-        # Provider bookkeeping.
-        #
-        if event_type.startswith("session."):
-            continue
+            #
+            # Provider bookkeeping.
+            #
+            if event_type.startswith("session."):
+                continue
 
-        if event_type.startswith("conversation."):
-            continue
+            if event_type.startswith("conversation."):
+                continue
 
-        if event_type.startswith("rate_limits."):
-            continue
+            if event_type.startswith("rate_limits."):
+                continue
 
-        #
-        # Provider errors.
-        #
-        if event_type == "error":
-            raise RuntimeError(
-                event["error"]["message"]
-            )
+            #
+            # Provider errors.
+            #
+            if event_type == "error":
+                raise RuntimeError(
+                    event["error"]["message"]
+                )
+    
+            #
+            # Normalize every provider text delta into AIRTP text.
+            #
+            delta = None
 
-        #
-        # Normalize every provider text delta into AIRTP text.
-        #
-        delta = None
+            if event_type == "response.output_text.delta":
+                delta = event.get("delta")
 
-        if event_type == "response.output_text.delta":
-            delta = event.get("delta")
+            elif event_type == "response.output_audio_transcript.delta":
+                delta = event.get("delta")
 
-        elif event_type == "response.output_audio_transcript.delta":
-            delta = event.get("delta")
+            elif event_type == "response.output_text.done":
+                delta = event.get("text")
 
-        elif event_type == "response.output_text.done":
-            delta = event.get("text")
+            if delta:
+                output.append(delta)
+                continue
 
-        if delta:
-            output.append(delta)
-            continue
+            #
+            # Ignore non-text provider media.
+            #
+            if event_type.startswith("response.output_audio"):
+                continue
 
-        #
-        # Ignore non-text provider media.
-        #
-        if event_type.startswith("response.output_audio"):
-            continue
+            if event_type.startswith("response.content_part"):
+                continue
 
-        if event_type.startswith("response.content_part"):
-            continue
+            if event_type.startswith("response.output_item"):
+                continue
 
-        if event_type.startswith("response.output_item"):
-            continue
-
-        #
-        # Logical response complete.
-        #
-        if event_type == "response.done":
-            return "".join(output)
+            #
+            # Logical response complete.
+            #
+            if event_type == "response.done":
+                return "".join(output)
 
 # ============================================================
 # AIRTP Session
