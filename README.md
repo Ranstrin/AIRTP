@@ -1,5 +1,7 @@
 # AIRTP — AIRTP Intelligent Realtime Transport Protocol
 
+🌐 **Project Website:** [airtp.ai](https://www.airtp.ai)
+
 AIRTP is a transport abstraction layer for interactive AI systems.
 
 The goal is to provide a protocol boundary between:
@@ -97,7 +99,6 @@ Status
 
 Experimental / Research Prototype
 
-TLDR;
 # AIRTP — AIRTP Intelligent Realtime Transport Protocol
 
 AIRTP is an open-source experimental protocol and reference implementation for transport-independent AI communication.
