@@ -1,6 +1,6 @@
 # AIRTP — AIRTP Intelligent Realtime Transport Protocol
 
-🌐 **Project Website:** [airtp.ai](https://www.airtp.com)
+🌐 **Project Website:** [airtp.com](https://www.airtp.com)
 
 AIRTP is a transport abstraction layer for interactive AI systems.
 
