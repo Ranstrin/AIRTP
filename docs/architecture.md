@@ -1,7 +1,5 @@
 # AIRTP Architecture
 
-**Version:** 0.1 (Experimental)
-
 ---
 
 # Overview
