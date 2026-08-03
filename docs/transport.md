@@ -29,19 +29,19 @@ The transport layer in AIRTP.py adheres to the following objectives:
 # 2. Layer Position
 
 ```text
-Application
-      │
-      ▼
-AIRTP Session
-      │
-      ▼
-Provider Adapter
-      │
-      ▼
-Transport Interface (AIRTP.py)
-      │
- ┌─────┴──────────────┐
- ▼                    ▼
+                Application
+                     │
+                     ▼
+               AIRTP Session
+                     │
+                     ▼
+              Provider Adapter
+                     │
+                     ▼
+          Transport Interface (AIRTP.py)
+                     │
+               ┌─────┴──────────────┐
+               ▼                    ▼
 WebSocketTransport (AIRTP.py)      Future Transports
       │
       ▼
