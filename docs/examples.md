@@ -1,7 +1,5 @@
 # AIRTP Examples
 
-**Version:** 0.1 (Experimental)
-
 This document demonstrates how applications interact with the AI Realtime Transport Protocol (AIRTP).
 
 The examples focus on the public AIRTP programming model rather than provider-specific APIs or transport implementations.
