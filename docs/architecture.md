@@ -1,329 +1,370 @@
-AIRTP Architecture
-Overview
+# AIRTP Architecture
 
-The AIRTP Intelligent Realtime Transport Protocol (AIRTP) is a transport abstraction layer for interactive Artificial Intelligence systems. Its primary objective is to separate AI application logic from the transport mechanisms required to communicate with model providers.
+---
 
-Rather than coupling an application directly to a specific AI provider's API, AIRTP introduces a protocol layer responsible for connection management, capability negotiation, message framing, chunk management, and session lifecycle control.
+# Overview
 
-This separation enables applications to communicate with different AI providers through a consistent interface while allowing the underlying transport implementation to evolve independently.
+The AI Realtime Transport Protocol (AIRTP) is a session-oriented communication layer that separates AI applications from provider-specific APIs and transport implementations.
 
-Architectural Philosophy
+Rather than allowing applications to communicate directly with a provider, AIRTP introduces a stable protocol layer responsible for managing session state, capability negotiation, message framing, logical message assembly, and provider adaptation.
 
-AIRTP applies principles found in layered networking architectures.
+This separation allows applications to communicate through a consistent interface while providers, transports, and protocol implementations evolve independently.
 
-Applications should communicate with a protocol, not with a transport implementation.
+---
 
-Likewise, transport implementations should communicate with remote services without requiring knowledge of the application semantics.
+# Design Philosophy
 
-This separation provides:
+AIRTP is built around one guiding principle:
+
+> Applications should communicate with a protocol—not with a provider.
+
+An AIRTP application exchanges logical requests and responses with a session. The session coordinates protocol behavior while delegating provider-specific behavior and network communication to interchangeable components.
+
+The result is a layered architecture with clear boundaries between responsibilities.
+
+---
+
+# Layered Architecture
 
 ```text
-Application Layer
+                    Application
+                          │
+                          ▼
+                  AIRTP Session API
+                          │
+          ┌───────────────┴───────────────┐
+          ▼                               ▼
+ Capability Negotiation           Logical Message Flow
+ Envelope Construction            Stream Reassembly
+ Session State                    Error Translation
+                          │
+                          ▼
+                  Provider Adapter
+                          │
+        ┌─────────────────┴─────────────────┐
+        ▼                                   ▼
+ OpenAI Realtime Adapter           Future Provider Adapter
+                          │
+                          ▼
+                  Transport Interface
+                          │
+        ┌─────────────────┴─────────────────┐
+        ▼                                   ▼
+ WebSocket Transport               Local Transport
+                          │
+                          ▼
+                    Remote Endpoint
+```
 
-+------------------------------------+
-| CLI / GUI / Services / Automation  |
-+------------------------------------+
-                  |
-                  v
-AIRTP Session Layer
-+------------------------------------+
-| Session Management                 |
-| Capability Negotiation             |
-| Metadata Management                |
-| Envelope Construction              |
-+------------------------------------+
-                  |
-                  v
-Protocol Layer
-+------------------------------------+
-| Chunk Management                   |
-| Message Ordering                   |
-| Fragment Reassembly                |
-| Stream Control                     |
-+------------------------------------+
-                  |
-                  v
-Transport Interface
-+------------------------------------+
-| Generic Transport API              |
-+------------------------------------+
-          |
-   +------+------+
-   |             |
-   v             v
-WebSocket     Local Transport
+Each layer communicates only with the layer immediately below it.
+
+---
+
+# Core Components
+
+## Session
+
+The Session is the primary interface presented to applications.
+
+Applications never communicate directly with transports or provider APIs.
+
+The session is responsible for:
+
+* session lifecycle management
+* capability negotiation
+* logical message sequencing
+* envelope construction
+* message dispatch
+* stream assembly
+* graceful shutdown
+
+From the application's perspective, a session behaves as a single logical communication channel.
+
+---
+
+## Provider Adapter
+
+Provider adapters isolate vendor-specific behavior.
+
+Responsibilities include:
+
+* provider authentication
+* provider session initialization
+* request serialization
+* provider event translation
+* response assembly
+* provider shutdown
+
+The adapter converts AIRTP logical messages into provider-specific requests and converts provider events back into AIRTP logical responses.
+
+Replacing a provider requires replacing only the adapter.
+
+---
+
+## Transport
+
+The transport layer moves serialized protocol messages between AIRTP and a remote endpoint.
+
+The transport is responsible for:
+
+* establishing connections
+* authentication headers
+* TLS configuration
+* sending serialized messages
+* receiving serialized messages
+* orderly shutdown
+
+The transport intentionally does not understand AIRTP protocol semantics.
+
+---
+
+# Logical Message Flow
+
+Applications exchange complete logical messages rather than transport events.
+
+```text
+Application
+
+      │
+
+session.send()
+
+      │
+
+AIRTP Session
+
+      │
+
+Provider Adapter
+
+      │
+
 Transport
-   |             |
-   v             v
-Remote AI    Local Runtime
 
-Design Objectives
+      │
 
-- Modularity
-- Provider Independence
-- Transport Independence
-- Protocol Extensibility
-- Simplified Application Development
-- Reusable Communication Infrastructure
+Remote Provider
 ```
-Design Objectives
 
-The architecture is designed around several primary objectives.
+Responses follow the reverse path.
 
-Transport Independence
+If the provider streams multiple transport messages, AIRTP assembles them internally before returning a complete logical response unless the application explicitly requests streaming.
 
-Applications should not depend upon WebSocket, HTTP, TCP, TLS, or any specific networking implementation.
+---
 
-Only the transport adapter should understand those protocols.
+# Streaming
 
-Provider Independence
+AIRTP separates logical streaming from transport streaming.
 
-No application code should require modification when replacing one AI provider with another.
+```text
+Provider Events
 
-Example:
+      │
+
+delta
+
+delta
+
+delta
+
+done
+
+      │
+
+AIRTP Stream Assembly
+
+      │
+
+Logical Response
+```
+
+Applications never manage transport fragmentation.
+
+The session determines whether a provider supports streaming and exposes a consistent programming model regardless of provider implementation.
+
+---
+
+# Capability Negotiation
+
+After the transport connection has been established, AIRTP negotiates protocol capabilities with the remote endpoint.
+
+Capabilities may include:
+
+* streaming
+* chunking
+* compression
+* binary payload support
+* protocol revision
+* future extensions
+
+Negotiation is performed automatically by the session manager.
+
+Applications typically do not interact with capability negotiation directly.
+
+---
+
+# Message Lifecycle
+
+A typical AIRTP request follows this sequence.
+
 ```text
 Application
-      |
-      |
-AIRTP Session
-      |
-      +----------------------+
-      |                      |
-OpenAI Adapter         Local Adapter
-      |                      |
-Realtime API         Local Model Runtime
+
+      │
+
+Create Request
+
+      │
+
+Envelope Construction
+
+      │
+
+Provider Translation
+
+      │
+
+Transport Send
+
+      │
+
+Remote Provider
+
+      │
+
+Provider Events
+
+      │
+
+AIRTP Reassembly
+
+      │
+
+Logical Response
+
+      │
+
+Application
 ```
-Session Abstraction
 
-Every communication channel is represented as an abstract session.
+Transport details remain hidden from the application.
 
-A session is responsible for:
+---
 
-initialization
-negotiation
-state tracking
-message exchange
-orderly shutdown
+# Session Lifecycle
 
-Applications interact with sessions rather than transport implementations.
+Every AIRTP session progresses through the same high-level states.
 
-Component Overview
-Session Manager
+```text
+Session Created
 
-The Session Manager coordinates the complete lifecycle of an AIRTP connection.
+        │
 
-Responsibilities include:
+Transport Connected
 
-establishing transport
-performing capability negotiation
-maintaining session metadata
-coordinating message exchange
-shutdown
-Transport Layer
-
-The transport layer provides reliable delivery of serialized protocol messages.
-
-The transport implementation is intentionally unaware of message semantics.
-
-Example transport implementations include:
-
-WebSocket
-HTTP Streaming
-Unix Domain Socket
-Local Process
-Named Pipe
-
-Future transports can be implemented without changing protocol logic.
+        │
 
 Capability Negotiation
 
-Upon establishing a connection, both peers advertise supported capabilities.
+        │
 
-Examples include:
+Provider Initialization
 
-supported modalities
-maximum message size
-chunking support
-compression
-streaming
-protocol revision
+        │
 
-Negotiation allows protocol evolution while maintaining interoperability.
-
-Envelope Layer
-
-Every protocol message is transmitted inside an AIRTP envelope.
-
-The envelope separates transport metadata from application payload.
-
-Example:
-
-{
-  "session": "a83b91",
-  "sequence": 142,
-  "timestamp": 1785328843,
-  "capabilities": {
-    "streaming": true,
-    "chunking": true
-  },
-  "payload": {
-    "...": "..."
-  }
-}
-
-The envelope provides a consistent message format independent of the transport implementation.
-
-Chunk Management
-
-Large payloads may be fragmented into multiple protocol chunks.
-
-Each chunk contains metadata describing:
-
-session identifier
-sequence number
-chunk index
-total chunk count
-payload length
-checksum (optional)
-
-The receiving endpoint performs deterministic reassembly before exposing the completed payload to the application.
-
-Streaming Model
-
-Streaming responses are represented as ordered message sequences.
-
-Chunk 1
-    |
-Chunk 2
-    |
-Chunk 3
-    |
-Chunk 4
-    |
-Complete Message
-
-Applications receive a complete logical message without managing fragment ordering.
-
-Model Adapter Interface
-
-Model adapters translate between provider-specific protocols and the AIRTP protocol.
-
-Responsibilities include:
-
-authentication
-session creation
-provider event translation
-request serialization
-response parsing
-
-Example:
-```text
-AIRTP Session
-      |
-      |
-Model Interface
-      |
-      +----------------------------+
-      |                            |
-OpenAI Adapter              Local Adapter
-      |                            |
-Realtime API             Local Runtime
-```
-Applications remain unaware of provider-specific implementation details.
-
-Session Lifecycle
-
-The expected lifecycle of an AIRTP session is:
-
-Application
-      |
-Create Session
-      |
-Connect Transport
-      |
-Capability Negotiation
-      |
 Session Ready
-      |
-Bidirectional Exchange
-      |
+
+        │
+
+Message Exchange
+
+        │
+
 Graceful Shutdown
-      |
+
+        │
+
 Transport Closed
+```
 
-Each stage has clearly defined responsibilities, enabling deterministic recovery and future protocol extensions.
+Each stage has clearly defined responsibilities, simplifying error handling and future protocol evolution.
 
-Error Handling
+---
 
-Errors are classified according to protocol layer.
+# Error Model
 
-Examples include:
+AIRTP classifies failures according to architectural layer.
 
-Transport Errors
+**Transport**
 
-network unavailable
-TLS failure
-timeout
-connection closed
+* connection failures
+* TLS errors
+* authentication failures
+* network interruption
 
-Protocol Errors
+**Protocol**
 
-malformed envelope
-unsupported capability
-invalid sequence
-negotiation failure
+* malformed envelopes
+* unsupported capabilities
+* sequencing violations
 
-Application Errors
+**Provider**
 
-invalid prompt
-unsupported operation
-authorization failure
+* invalid requests
+* provider-specific errors
+* model unavailable
+* quota exceeded
 
-This separation allows recovery strategies appropriate to each layer.
+Applications may recover differently depending on which layer generated the error.
 
-Extensibility
+---
 
-AIRTP is designed to accommodate future protocol evolution.
+# Extensibility
 
-Potential extensions include:
+AIRTP is designed to evolve without changing application code.
 
-binary payload support
-compression negotiation
-encryption negotiation
-multiplexed logical channels
-distributed session routing
-persistent session resumption
-protocol version negotiation
-multi-model orchestration
+Future protocol features may include:
 
-Existing applications should continue operating as capabilities evolve.
+* multiplexed sessions
+* resumable streams
+* adaptive chunk sizing
+* compression negotiation
+* binary framing
+* distributed routing
+* protocol plugins
 
-Security Considerations
+These features can be introduced through capability negotiation while preserving compatibility with existing applications.
 
-AIRTP delegates transport security to the underlying transport implementation while maintaining protocol-level validation.
+---
 
-Recommended practices include:
+# Security
 
-TLS-protected transport
-authenticated sessions
-capability validation
-sequence verification
-input validation
-secure credential management
+Security responsibilities are divided by layer.
 
-API keys, authentication tokens, and provider-specific credentials should never be embedded within protocol payloads.
+The transport layer manages:
 
-Guiding Principles
+* TLS
+* endpoint authentication
+* credential transmission
 
-AIRTP is guided by several architectural principles.
+The protocol layer manages:
 
-Separate application logic from transport mechanics.
-Treat AI communication as a protocol engineering problem.
-Favor composition over provider-specific integration.
-Minimize assumptions about underlying transport.
-Enable interoperability through explicit capability negotiation.
-Design for extensibility while preserving backward compatibility.
-Maintain deterministic session behavior across providers.
-Project Status
+* envelope validation
+* sequencing
+* capability validation
 
-AIRTP is an experimental research protocol intended to explore transport abstraction and interoperable AI communication. The reference implementation serves as both a functional prototype and a foundation for future experimentation, refinement, and community contribution.
+Provider credentials remain transport metadata and are never embedded inside AIRTP protocol messages.
+
+---
+
+# Guiding Principle
+
+AIRTP treats AI communication as a protocol engineering problem rather than a provider integration problem.
+
+Applications depend only on the AIRTP session interface.
+
+Provider adapters isolate vendor-specific APIs.
+
+Transport implementations isolate networking details.
+
+By maintaining these boundaries, AIRTP enables interoperable AI communication while allowing transports, providers, and protocol implementations to evolve independently.

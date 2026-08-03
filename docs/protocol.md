@@ -1,29 +1,30 @@
 # AIRTP Protocol Specification
 
-**Version:** 0.1 (Experimental)
 **Status:** Draft Specification
 
 ---
 
 # Abstract
 
-The AIRTP Intelligent Realtime Transport Protocol (AIRTP) defines an application-layer protocol for interactive Artificial Intelligence systems.
+The AI Realtime Transport Protocol (AIRTP) defines a session-oriented application protocol for interactive Artificial Intelligence systems.
 
-AIRTP provides a provider-independent communication protocol that separates AI application logic from transport implementation details. The protocol standardizes session establishment, capability negotiation, message framing, chunk management, streaming, and orderly session termination.
+AIRTP provides a provider-independent communication model that separates application logic from transport implementations and provider-specific APIs.
 
-The protocol is transport agnostic and may operate over WebSocket, HTTP streaming, local sockets, named pipes, or future transport implementations.
+Rather than exposing transport mechanics to applications, AIRTP presents a consistent session interface that manages capability negotiation, logical message exchange, streaming, provider adaptation, and orderly session shutdown.
+
+The protocol is transport agnostic and may operate over WebSocket, HTTP streaming, local IPC, or future communication mechanisms without requiring changes to application code.
 
 ---
 
-# 1. Goals
+# 1. Design Goals
 
-AIRTP has six primary goals.
+AIRTP is designed around six primary objectives.
 
-1. Transport independence
-2. AI provider independence
-3. Deterministic message delivery
-4. Explicit capability negotiation
-5. Structured message framing
+1. Session-oriented communication
+2. Provider independence
+3. Transport independence
+4. Deterministic logical messaging
+5. Explicit capability negotiation
 6. Extensible protocol evolution
 
 ---
@@ -36,7 +37,10 @@ AIRTP operates as a layered protocol.
 Application
       │
       ▼
-AIRTP Protocol
+AIRTP Session
+      │
+      ▼
+Provider Adapter
       │
       ▼
 Transport
@@ -45,26 +49,30 @@ Transport
 Remote Endpoint
 ```
 
-The protocol does not define transport reliability.
+Applications communicate only with AIRTP sessions.
 
-Instead, AIRTP assumes the selected transport provides ordered message delivery or exposes ordering information.
+Provider adapters isolate vendor-specific APIs.
+
+Transport implementations move serialized protocol messages without interpreting protocol semantics.
 
 ---
 
 # 3. Session Model
 
-Every connection is represented as a Session.
+Every communication channel is represented by a Session.
 
-A session consists of:
+A session maintains:
 
 * Session Identifier
-* Capability State
-* Sequence Counter
+* Negotiated Capabilities
+* Logical Sequence State
+* Provider Adapter
 * Transport Binding
-* Peer Metadata
-* Negotiated Parameters
+* Runtime Metadata
 
-A session begins after successful transport establishment and concludes following orderly shutdown or transport failure.
+The session is responsible for coordinating the complete lifecycle of a logical connection.
+
+Applications do not communicate directly with transports or providers.
 
 ---
 
@@ -80,29 +88,38 @@ Transport Connected
 Capability Negotiation
         │
         ▼
-Session Active
+Provider Initialization
         │
         ▼
-Streaming Exchange
+Session Ready
         │
         ▼
-Graceful Close
+Logical Message Exchange
+        │
+        ▼
+Graceful Shutdown
 ```
+
+Each stage has clearly defined responsibilities.
 
 ---
 
-# 5. Message Structure
+# 5. Logical Messages
 
-Every protocol exchange consists of one logical message.
+AIRTP exchanges logical messages rather than transport events.
 
-Each message contains:
+Applications send requests and receive complete responses.
+
+Transport fragmentation, streaming events, and provider-specific message formats remain internal implementation details.
+
+A logical message consists of:
 
 ```text
 Envelope
     │
     ├── Metadata
-    ├── Capabilities
-    ├── Sequencing
+    ├── Sequence
+    ├── Message Type
     └── Payload
 ```
 
@@ -110,47 +127,47 @@ Envelope
 
 # 6. Envelope Format
 
+Every AIRTP message is represented by an envelope.
+
 Example:
 
 ```json
 {
   "version": "0.1",
-  "session": "session-12345",
-  "sequence": 18,
-  "timestamp": 1783521188,
+  "session": "session-42",
+  "sequence": 19,
   "type": "message",
   "payload": {
-      ...
+    "...": "..."
   }
 }
 ```
 
 Required fields:
 
-| Field     | Description               |
-| --------- | ------------------------- |
-| version   | AIRTP protocol version     |
-| session   | Session identifier        |
-| sequence  | Monotonic sequence number |
-| timestamp | Unix timestamp            |
-| type      | Message type              |
-| payload   | Application payload       |
+| Field    | Description               |
+| -------- | ------------------------- |
+| version  | AIRTP protocol version    |
+| session  | Session identifier        |
+| sequence | Monotonic sequence number |
+| type     | Logical message type      |
+| payload  | Application payload       |
+
+Additional metadata may be introduced through capability negotiation.
 
 ---
 
 # 7. Message Types
 
-AIRTP defines logical message categories.
+AIRTP defines logical protocol message categories.
 
 ## CONNECT
 
-Requests creation of a new logical session.
-
-Example
+Requests creation of a logical session.
 
 ```json
 {
-  "type":"connect"
+  "type": "connect"
 }
 ```
 
@@ -160,15 +177,13 @@ Example
 
 Advertises supported protocol capabilities.
 
-Example
-
 ```json
 {
-  "type":"capability",
-  "capabilities":{
-      "streaming":true,
-      "chunking":true,
-      "compression":false
+  "type": "capability",
+  "capabilities": {
+    "streaming": true,
+    "chunking": true,
+    "compression": false
   }
 }
 ```
@@ -177,12 +192,14 @@ Example
 
 ## MESSAGE
 
-Application payload.
+Represents a complete logical application request.
 
 ```json
 {
-    "type":"message",
-    "payload":{ ... }
+  "type": "message",
+  "payload": {
+    "...": "..."
+  }
 }
 ```
 
@@ -190,29 +207,21 @@ Application payload.
 
 ## STREAM
 
-Represents an incremental response.
+Represents an incremental logical response.
 
-Example
-
-```json
-{
-    "type":"stream",
-    "sequence":88,
-    "chunk":3
-}
-```
+Streaming remains optional and is negotiated during session establishment.
 
 ---
 
 ## COMPLETE
 
-Indicates logical completion of a streamed message.
+Marks completion of a streamed logical response.
 
 ---
 
 ## ERROR
 
-Represents protocol or application failure.
+Represents protocol, transport, provider, or application failures.
 
 ---
 
@@ -224,38 +233,28 @@ Requests orderly session termination.
 
 # 8. Capability Negotiation
 
-Capability negotiation occurs immediately after transport establishment.
+Capability negotiation occurs immediately after the transport has been established.
 
-Capabilities describe protocol features rather than provider-specific behavior.
+Capabilities describe protocol behavior rather than provider features.
 
-Example
-
-```json
-{
-    "chunking":true,
-    "streaming":true,
-    "compression":false,
-    "binary":false
-}
-```
-
-Capabilities may include:
+Typical negotiated capabilities include:
 
 * streaming
 * chunking
-* binary payloads
 * compression
-* resumable sessions
-* multiplexing
+* binary payloads
 * protocol revision
+* future extensions
 
-Unknown capabilities should be ignored unless explicitly required.
+Unknown optional capabilities should be ignored.
+
+Unsupported required capabilities may terminate session establishment.
 
 ---
 
 # 9. Sequencing
 
-Every message contains a monotonically increasing sequence number.
+Every logical message contains a monotonically increasing sequence number.
 
 ```text
 1
@@ -269,126 +268,49 @@ Sequence numbers provide:
 
 * ordering
 * duplicate detection
-* recovery support
+* future recovery mechanisms
 
-Sequence numbers are scoped to a session.
-
----
-
-# 10. Chunking
-
-Large payloads may be fragmented.
-
-Chunk metadata consists of:
-
-```text
-Session
-Sequence
-Chunk Index
-Chunk Count
-Payload Size
-```
-
-Example
-
-```json
-{
-    "chunk":{
-        "index":2,
-        "total":5
-    }
-}
-```
-
-The receiving endpoint performs deterministic reassembly.
-
-Applications never process incomplete logical messages.
+Sequence numbers are scoped to a single session.
 
 ---
 
-# 11. Streaming
+# 10. Streaming
 
-Streaming is represented as ordered partial payloads.
+AIRTP separates logical streaming from transport streaming.
 
-```text
-Chunk 1
-Chunk 2
-Chunk 3
-Chunk 4
-Complete
-```
+A provider may emit multiple transport events while AIRTP exposes either:
 
-The protocol intentionally separates streaming from transport implementation.
+* incremental logical chunks, or
+* one completed logical response
 
----
+depending on the negotiated capabilities and application interface.
 
-# 12. Provider Adapters
-
-AIRTP does not define provider-specific semantics.
-
-Instead, provider adapters translate between provider APIs and AIRTP.
-
-Example
-
-```text
-OpenAI Realtime
-        │
-        ▼
- OpenAI Adapter
-        │
-        ▼
-      AIRTP
-```
-
-Another provider:
-
-```text
-Future Provider
-        │
-        ▼
- Provider Adapter
-        │
-        ▼
-      AIRTP
-```
-
-Applications communicate only with AIRTP.
+Applications never process provider-specific streaming events directly.
 
 ---
 
-# 13. Error Model
+# 11. Provider Adapters
 
-Errors are categorized by layer.
+Provider adapters translate between AIRTP and provider-specific APIs.
 
-Transport
+Responsibilities include:
 
-* timeout
-* disconnect
-* TLS failure
+* authentication
+* session initialization
+* request translation
+* event translation
+* response assembly
+* graceful shutdown
 
-Protocol
+Applications remain provider independent.
 
-* malformed envelope
-* invalid sequence
-* unsupported capability
-
-Application
-
-* authorization
-* invalid request
-* unsupported operation
-
-Provider
-
-* quota exceeded
-* provider unavailable
-* model unavailable
+Replacing a provider requires replacing only the adapter.
 
 ---
 
-# 14. Transport Independence
+# 12. Transport Independence
 
-AIRTP intentionally avoids assumptions regarding transport.
+AIRTP intentionally makes no assumptions regarding the underlying transport.
 
 Supported transports may include:
 
@@ -397,115 +319,170 @@ Supported transports may include:
 * TCP
 * Unix Domain Socket
 * Named Pipe
-* Shared Memory
+* Local IPC
+* Future transport implementations
 
-Transport adapters expose a common interface.
+Every transport exposes a common interface.
 
-```text
+```python
 connect()
 
-send()
+send(message)
 
 receive()
 
 close()
 ```
 
-Applications remain transport independent.
+The transport layer moves serialized protocol messages but does not interpret protocol semantics.
 
 ---
 
-# 15. Session Shutdown
+# 13. Error Model
 
-Orderly shutdown follows:
+AIRTP categorizes failures according to architectural layer.
+
+## Transport
+
+* connection failure
+* TLS failure
+* timeout
+* authentication failure
+
+## Protocol
+
+* malformed envelope
+* invalid sequence
+* unsupported capability
+* negotiation failure
+
+## Provider
+
+* invalid request
+* provider unavailable
+* quota exceeded
+* unsupported model
+
+## Application
+
+* invalid input
+* unsupported operation
+
+Separating failures by layer enables applications to implement appropriate recovery strategies.
+
+---
+
+# 14. Session Shutdown
+
+Orderly shutdown follows a consistent sequence.
 
 ```text
 Application
 
       │
 
- CLOSE
+Session Close
 
       │
 
- Flush Pending Messages
+Provider Shutdown
 
       │
 
- Transport Close
+Transport Close
 
       │
 
- Session Destroyed
+Session Destroyed
 ```
 
-Transport failure may terminate a session immediately.
+Transport failures may terminate a session immediately.
+
+Applications should always perform graceful shutdown when possible.
 
 ---
 
-# 16. Protocol Versioning
+# 15. Versioning
 
-Every envelope contains a protocol version.
+Every AIRTP envelope contains a protocol version.
 
-Future protocol revisions should negotiate compatibility during capability exchange.
+Future revisions should negotiate compatibility during capability exchange.
 
-Example
+Example:
 
 ```json
 {
-    "version":"0.2"
+  "version": "0.2"
 }
 ```
 
-Unknown versions may be rejected or negotiated.
+Unknown protocol revisions may be rejected or negotiated according to implementation policy.
 
 ---
 
-# 17. Security Considerations
+# 16. Security Considerations
 
-Implementations should:
+AIRTP separates protocol security from transport security.
 
-* authenticate endpoints
-* validate envelopes
-* validate sequence numbers
-* protect credentials
-* use encrypted transport
-* reject malformed messages
+The transport layer is responsible for:
 
-Provider credentials must never appear inside protocol payloads.
+* encrypted communication
+* endpoint authentication
+* credential transmission
+
+The protocol layer is responsible for:
+
+* envelope validation
+* sequence validation
+* capability validation
+
+Provider credentials must never appear inside AIRTP protocol payloads.
 
 ---
 
-# 18. Future Extensions
+# 17. Future Extensions
 
-Possible protocol extensions include:
+AIRTP is intentionally designed for protocol evolution.
 
+Potential future capabilities include:
+
+* multiplexed sessions
+* resumable streams
+* adaptive chunk sizing
 * binary framing
 * compression negotiation
-* multiplexed logical channels
 * distributed routing
-* peer discovery
 * protocol plugins
-* resumable sessions
-* congestion signaling
-* adaptive chunk sizing
-* quality-of-service negotiation
+* congestion awareness
 
-The protocol is intentionally extensible while preserving compatibility with existing implementations.
+Capability negotiation enables these features while preserving compatibility with existing implementations.
 
 ---
 
-# 19. Reference Implementation
+# 18. Reference Implementation
 
-The AIRTP reference implementation demonstrates the protocol using a modular transport architecture with interchangeable provider adapters.
+The AIRTP reference implementation demonstrates the protocol using a modular architecture consisting of:
 
-The implementation is intended as a research platform for experimentation, interoperability, and protocol evolution rather than a finalized networking standard.
+* Session management
+* Provider adapters
+* Transport implementations
+* Capability negotiation
+* Logical message assembly
+
+The implementation serves as both a working prototype and a platform for future protocol experimentation.
 
 ---
 
-# 20. Guiding Principle
+# 19. Guiding Principle
 
-> Applications should communicate with a protocol rather than a provider.
+> Applications should communicate with a protocol—not with a provider.
 
-AIRTP treats AI communication as a protocol engineering problem, allowing transport implementations, model providers, and application logic to evolve independently while maintaining a consistent session-oriented communication model.
+AIRTP treats AI communication as a protocol engineering problem.
 
+Applications depend only on the AIRTP session interface.
+
+Provider adapters isolate vendor-specific APIs.
+
+Transport implementations isolate networking concerns.
+
+By maintaining these boundaries, AIRTP provides a reusable foundation for interoperable AI communication while allowing transports, providers, and protocol implementations to evolve independently.

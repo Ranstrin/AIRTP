@@ -1,14 +1,14 @@
 # AIRTP Examples
 
-**Version:** 0.1 (Experimental)
+This document demonstrates how applications interact with the AI Realtime Transport Protocol (AIRTP).
 
-This document provides practical examples demonstrating how applications interact with the AIRTP Intelligent Realtime Transport Protocol (AIRTP). The examples focus on the AIRTP programming model rather than any specific AI provider implementation.
+The examples focus on the public AIRTP programming model rather than provider-specific APIs or transport implementations.
 
 ---
 
 # Example 1 — Creating a Session
 
-Every interaction begins by creating an AIRTP session.
+Every AIRTP application begins by creating a session.
 
 ```python
 from AIRTP import Session
@@ -16,17 +16,36 @@ from AIRTP import Session
 session = Session(
     endpoint="wss://provider.example/realtime"
 )
-
-await session.connect()
 ```
 
-Once connected, the session is responsible for negotiating protocol capabilities and establishing communication with the remote endpoint.
+A Session represents one logical communication channel.
+
+Applications communicate only with the Session interface.
 
 ---
 
-# Example 2 — Sending a Prompt
+# Example 2 — Connecting
 
-Applications communicate through the session interface.
+Establish the transport and initialize the provider.
+
+```python
+await session.connect()
+```
+
+During connection AIRTP automatically:
+
+* establishes the transport
+* authenticates the endpoint
+* negotiates protocol capabilities
+* initializes the provider session
+
+Applications do not perform these steps directly.
+
+---
+
+# Example 3 — Sending a Request
+
+Applications exchange logical messages.
 
 ```python
 response = await session.send(
@@ -36,36 +55,40 @@ response = await session.send(
 print(response)
 ```
 
-The application does not interact directly with WebSockets, HTTP requests, or provider-specific APIs.
+The Session hides provider APIs, transport protocols, and protocol framing.
 
 ---
 
-# Example 3 — Interactive Session
+# Example 4 — Interactive Console
 
 ```python
 await session.connect()
 
-while True:
+try:
 
-    prompt = input("> ")
+    while True:
 
-    if prompt.lower() == "exit":
-        break
+        prompt = input("> ")
 
-    response = await session.send(prompt)
+        if prompt.lower() == "exit":
+            break
 
-    print(response)
+        response = await session.send(prompt)
 
-await session.close()
+        print(response)
+
+finally:
+
+    await session.close()
 ```
 
-AIRTP manages the session lifecycle while presenting a simple request/response interface to the application.
+The application communicates only through the Session interface.
 
 ---
 
-# Example 4 — Streaming Responses
+# Example 5 — Streaming
 
-Applications may process incremental responses.
+Applications may request streamed responses.
 
 ```python
 await session.connect()
@@ -77,53 +100,11 @@ async for chunk in session.stream(
     print(chunk, end="")
 ```
 
-Streaming allows large responses to be consumed without waiting for the complete message.
+AIRTP converts provider-specific streaming events into a consistent application interface.
 
 ---
 
-# Example 5 — Capability Negotiation
-
-Following transport establishment, the peers exchange protocol capabilities.
-
-Example capability advertisement:
-
-```json
-{
-  "type": "capability",
-  "capabilities": {
-    "streaming": true,
-    "chunking": true,
-    "compression": false,
-    "binary": false
-  }
-}
-```
-
-Applications typically do not perform capability negotiation directly; the AIRTP session manager handles this automatically.
-
----
-
-# Example 6 — Chunked Message
-
-Large logical messages may be transmitted as multiple chunks.
-
-```json
-{
-  "session": "session-1",
-  "sequence": 42,
-  "chunk": {
-    "index": 2,
-    "total": 5
-  },
-  "payload": "..."
-}
-```
-
-AIRTP performs message reassembly before exposing the completed message to the application.
-
----
-
-# Example 7 — Transport Independence
+# Example 6 — Transport Independence
 
 Changing transports should not require application changes.
 
@@ -141,13 +122,13 @@ session = Session(
 )
 ```
 
-The remainder of the application remains unchanged.
+Application logic remains unchanged.
 
 ---
 
-# Example 8 — Provider Independence
+# Example 7 — Provider Independence
 
-Switching AI providers requires replacing only the provider adapter.
+Applications communicate with AIRTP rather than directly with a provider.
 
 ```text
 Application
@@ -159,10 +140,10 @@ AIRTP Session
 OpenAI Adapter
       │
       ▼
-Realtime API
+OpenAI Realtime API
 ```
 
-Later:
+Replacing the provider:
 
 ```text
 Application
@@ -177,33 +158,33 @@ Local Adapter
 Local Runtime
 ```
 
-Application code remains identical.
+Only the provider adapter changes.
 
 ---
 
-# Example 9 — Session Lifecycle
-
-Typical lifecycle:
+# Example 8 — Session Lifecycle
 
 ```text
-Create Session
-      │
-Connect
-      │
+Session Created
+        │
+Transport Connected
+        │
 Capability Negotiation
-      │
+        │
+Provider Initialization
+        │
 Session Ready
-      │
-Exchange Messages
-      │
-Close Session
+        │
+Message Exchange
+        │
+Session Closed
 ```
 
-Applications only interact with the session manager.
+The Session coordinates the complete lifecycle.
 
 ---
 
-# Example 10 — Graceful Shutdown
+# Example 9 — Graceful Shutdown
 
 ```python
 try:
@@ -219,18 +200,16 @@ finally:
     await session.close()
 ```
 
-A graceful shutdown ensures resources are released and the transport connection is terminated cleanly.
+Graceful shutdown releases transport resources and terminates the provider session cleanly.
 
 ---
 
-# Example 11 — Error Handling
+# Example 10 — Error Handling
 
 ```python
 try:
 
-    response = await session.send(
-        prompt
-    )
+    response = await session.send(prompt)
 
 except AIRTPTransportError:
 
@@ -238,20 +217,89 @@ except AIRTPTransportError:
 
 except AIRTPProtocolError:
 
-    print("Protocol violation.")
+    print("Protocol error.")
 
-except AIRTPApplicationError:
+except AIRTPProviderError:
 
-    print("Application rejected request.")
+    print("Provider unavailable.")
 ```
 
-Separating errors by layer allows applications to implement appropriate recovery strategies.
+Separating failures by architectural layer simplifies recovery.
 
 ---
 
-# Example 12 — Custom Transport
+# Example 11 — Automatic Capability Negotiation
 
-Developers may implement new transports by conforming to the AIRTP transport interface.
+Applications never negotiate protocol capabilities directly.
+
+```python
+await session.connect()
+```
+
+Internally AIRTP performs capability negotiation before the session becomes available.
+
+Possible negotiated capabilities include:
+
+* streaming
+* chunking
+* compression
+* protocol version
+
+---
+
+# Example 12 — Logical Message Assembly
+
+Providers may emit many transport events.
+
+```text
+Provider
+
+delta
+
+delta
+
+delta
+
+done
+```
+
+AIRTP assembles these into one logical response.
+
+```python
+response = await session.send(
+    "Summarize TCP congestion control."
+)
+
+print(response)
+```
+
+Applications do not manage provider events.
+
+---
+
+# Example 13 — Multiple Sessions
+
+Applications may maintain multiple concurrent sessions.
+
+```python
+session_a = Session(...)
+session_b = Session(...)
+
+await session_a.connect()
+await session_b.connect()
+
+await session_a.send("Hello")
+
+await session_b.send("Status?")
+```
+
+Each Session maintains independent transport, sequencing, and provider state.
+
+---
+
+# Example 14 — Implementing a Custom Transport
+
+New transports implement the Transport interface.
 
 ```python
 class CustomTransport(Transport):
@@ -269,99 +317,67 @@ class CustomTransport(Transport):
         ...
 ```
 
-No modifications to the AIRTP protocol layer are required.
+No modifications to the Session or Provider Adapter are required.
 
 ---
 
-# Example 13 — Envelope Construction
+# Example 15 — Implementing a Provider Adapter
 
-Every application message is wrapped in an AIRTP envelope before transmission.
-
-```json
-{
-  "version": "0.1",
-  "session": "session-42",
-  "sequence": 19,
-  "type": "message",
-  "payload": {
-    "prompt": "Summarize TCP congestion control."
-  }
-}
-```
-
-The envelope provides protocol metadata independent of the underlying transport.
-
----
-
-# Example 14 — Multiple Sessions
-
-Applications may manage multiple concurrent sessions.
+Provider adapters translate between AIRTP and provider-specific APIs.
 
 ```python
-session_a = Session(...)
-session_b = Session(...)
+class ProviderAdapter:
 
-await session_a.connect()
-await session_b.connect()
+    async def initialize(self, transport):
+        ...
 
-await session_a.send("Hello")
+    async def send_message(self, transport, message):
+        ...
 
-await session_b.send("Status?")
+    async def receive_message(self, transport):
+        ...
+
+    async def close(self, transport):
+        ...
 ```
 
-Each session maintains independent sequencing, capabilities, and transport state.
+Replacing a provider requires replacing only the adapter implementation.
 
 ---
 
-# Example 15 — Reference Architecture
+# Example 16 — Reference Architecture
 
 ```text
                     Application
-
-                         │
-
-                         ▼
-
-                  AIRTP Session API
-
-                         │
-
-                         ▼
-
-                 Capability Manager
-
-                         │
-
-                         ▼
-
-                  Envelope Builder
-
-                         │
-
-                         ▼
-
-                 Transport Interface
-
-          ┌──────────────┼──────────────┐
-
-          │                             │
-
-          ▼                             ▼
-
-  WebSocket Transport          Local Transport
-
-          │                             │
-
-          ▼                             ▼
-
-   Remote AI Provider           Local AI Runtime
+                          │
+                          ▼
+                    AIRTP Session
+                          │
+            ┌─────────────┴─────────────┐
+            ▼                           ▼
+   Capability Negotiation       Logical Messaging
+      Session Lifecycle         Stream Assembly
+                          │
+                          ▼
+                  Provider Adapter
+                          │
+                          ▼
+                  Transport Interface
+            ┌─────────────┴─────────────┐
+            ▼                           ▼
+      WebSocket Transport        Local Transport
+                          │
+                          ▼
+                    Remote Endpoint
 ```
+
+Applications communicate only with the Session.
 
 ---
 
-# Example 16 — Philosophy
+# Example 17 — Philosophy
 
-Traditional integrations often bind applications directly to a provider-specific API.
+Traditional integrations often couple applications directly to provider APIs.
 
 ```text
 Application
@@ -370,36 +386,39 @@ Application
 Provider API
 ```
 
-AIRTP introduces an abstraction layer.
+AIRTP introduces a stable protocol layer.
 
 ```text
 Application
       │
       ▼
-AIRTP
+AIRTP Session
       │
       ▼
 Provider Adapter
       │
       ▼
+Transport
+      │
+      ▼
 Provider
 ```
 
-The application depends only on AIRTP, enabling transport and provider implementations to evolve independently.
+This separation allows providers, transports, and protocol implementations to evolve independently.
 
 ---
 
 # Summary
 
-These examples demonstrate the core design philosophy of AIRTP:
+These examples demonstrate the core AIRTP programming model.
 
-* applications communicate with sessions rather than transports
-* transports move serialized protocol messages without interpreting them
-* provider adapters isolate vendor-specific APIs
-* protocol envelopes standardize communication
-* capability negotiation enables extensibility
-* session management provides a consistent programming model
-* transport independence allows the same application to operate across multiple communication mechanisms
+* Applications communicate only with Sessions.
+* Sessions manage the complete communication lifecycle.
+* Provider adapters isolate vendor-specific APIs.
+* Transports provide communication without interpreting protocol semantics.
+* Capability negotiation occurs automatically.
+* Logical messages are presented independently of transport events.
+* Streaming is exposed through a consistent interface.
+* Providers and transports may be replaced without changing application code.
 
-By maintaining clear boundaries between application logic, protocol semantics, transport mechanics, and provider-specific behavior, AIRTP provides a reusable foundation for interoperable AI communication.
-
+By maintaining clear boundaries between application logic, protocol behavior, provider integration, and communication mechanics, AIRTP provides a reusable foundation for interoperable AI communication.

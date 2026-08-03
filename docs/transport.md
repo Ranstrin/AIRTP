@@ -1,29 +1,28 @@
 # AIRTP Transport Layer Specification
 
-**Version:** 0.1 (Experimental)
 **Status:** Draft Specification
 
 ---
 
 # Abstract
 
-The AIRTP Intelligent Realtime Transport Protocol (AIRTP) Transport Layer defines the interface responsible for establishing, maintaining, and terminating communication channels between an AIRTP session and a remote endpoint.
+The AIRTP Transport Layer defines the interface responsible for establishing, maintaining, and terminating communication channels between an AIRTP provider adapter and a remote endpoint.
 
-The transport layer is intentionally isolated from application semantics and protocol interpretation. Its sole responsibility is the reliable movement of serialized protocol messages between endpoints.
+The transport layer exists solely to move serialized messages between endpoints. It intentionally has no knowledge of AIRTP protocol semantics, application logic, or provider-specific message interpretation.
 
-Transport implementations may include WebSocket, HTTP streaming, TCP, Unix domain sockets, named pipes, local process communication, or future transport mechanisms without requiring changes to the AIRTP protocol itself.
+By isolating transport mechanics from protocol behavior, AIRTP allows applications, providers, and communication technologies to evolve independently.
 
 ---
 
 # 1. Design Goals
 
-The transport layer is designed around the following principles:
+The AIRTP transport layer is designed around the following objectives.
 
 * Transport independence
 * Provider independence
 * Pluggable implementations
-* Deterministic session lifecycle
 * Minimal transport assumptions
+* Explicit lifecycle management
 * Clean separation of responsibilities
 
 ---
@@ -31,418 +30,62 @@ The transport layer is designed around the following principles:
 # 2. Layer Position
 
 ```text
-               Application
-
-                     │
-
-                     ▼
-
-             AIRTP Session Layer
-
-                     │
-
-                     ▼
-
-              AIRTP Protocol Layer
-
-                     │
-
-                     ▼
-
-            Transport Interface
-
-        ┌────────────┼────────────┐
-
-        │            │            │
-
-        ▼            ▼            ▼
-
-   WebSocket      HTTP Stream    Local IPC
-
-        │            │            │
-
-        └────────────┼────────────┘
-
-                     ▼
-
-              Remote AI Endpoint
+Application
+      │
+      ▼
+AIRTP Session
+      │
+      ▼
+Provider Adapter
+      │
+      ▼
+Transport Interface
+      │
+ ┌────┴───────────────┐
+ ▼                    ▼
+WebSocket      Local Transport
+Transport
+      │
+      ▼
+Remote Endpoint
 ```
 
-The transport layer never interprets protocol payloads.
+The transport layer communicates only with the provider adapter.
+
+Applications never interact with transport implementations directly.
 
 ---
 
 # 3. Responsibilities
 
-The transport implementation is responsible for:
+The transport layer is responsible for communication mechanics.
 
-* opening a communication channel
-* authenticating with the remote endpoint (where applicable)
-* sending serialized protocol messages
-* receiving serialized protocol messages
-* orderly transport shutdown
-* exposing transport failures
+Its responsibilities include:
 
-The transport implementation is **not** responsible for:
+* opening communication channels
+* configuring secure connections
+* authenticating with remote endpoints
+* sending serialized messages
+* receiving serialized messages
+* orderly connection shutdown
+* reporting transport failures
+
+The transport layer does **not** perform:
 
 * capability negotiation
-* message parsing
-* protocol semantics
-* application logic
-* provider-specific event translation
+* protocol parsing
+* envelope construction
+* logical message assembly
+* provider event translation
+* application processing
+
+Those responsibilities belong to higher layers.
 
 ---
 
 # 4. Transport Interface
 
-Every transport implementation shall expose the same public interface.
-
-```python
-connect()
-
-send(message)
-
-receive()
-
-close()
-```
-
-These operations define the transport contract used by the AIRTP session manager.
-
----
-
-# 5. Connection Lifecycle
-
-Every transport follows the same lifecycle.
-
-```text
-Transport Created
-
-        │
-
-        ▼
-
-Configuration Loaded
-
-        │
-
-        ▼
-
-Connect()
-
-        │
-
-        ▼
-
-Connected
-
-        │
-
-        ▼
-
-Send / Receive
-
-        │
-
-        ▼
-
-Close()
-
-        │
-
-        ▼
-
-Disconnected
-```
-
----
-
-# 6. Connection State
-
-Transport implementations should maintain explicit connection state.
-
-Recommended states:
-
-```text
-DISCONNECTED
-
-CONNECTING
-
-CONNECTED
-
-CLOSING
-
-CLOSED
-
-FAILED
-```
-
-Explicit state simplifies recovery and debugging.
-
----
-
-# 7. Transport Abstraction
-
-Applications communicate only with the transport interface.
-
-Example:
-
-```text
-Application
-
-      │
-
-      ▼
-
-AIRTP Session
-
-      │
-
-      ▼
-
-Transport.send()
-
-      │
-
-      ▼
-
-WebSocket
-```
-
-Changing the transport implementation should not require application changes.
-
----
-
-# 8. WebSocket Transport
-
-The reference implementation uses secure WebSockets.
-
-Example connection:
-
-```text
-wss://example-provider/realtime
-```
-
-Responsibilities include:
-
-* TLS negotiation
-* authentication headers
-* WebSocket handshake
-* bidirectional messaging
-* graceful closure
-
-WebSocket-specific behavior remains isolated inside the transport implementation.
-
----
-
-# 9. Local Transport
-
-A local implementation may communicate directly with an AI runtime.
-
-Example:
-
-```text
-Application
-
-      │
-
-      ▼
-
-AIRTP
-
-      │
-
-      ▼
-
-Local Socket
-
-      │
-
-      ▼
-
-Model Runtime
-```
-
-The remainder of the AIRTP stack remains unchanged.
-
----
-
-# 10. Transport Independence
-
-AIRTP intentionally avoids dependence on any specific networking technology.
-
-Potential transport implementations include:
-
-* WebSocket
-* HTTP Streaming
-* TCP
-* Unix Domain Socket
-* Named Pipe
-* Shared Memory
-* Loopback Adapter
-* Future Provider SDKs
-
-Every implementation exposes the same transport contract.
-
----
-
-# 11. Authentication
-
-Authentication belongs to the transport implementation.
-
-Examples:
-
-* API Keys
-* OAuth Tokens
-* Mutual TLS
-* Local Authentication
-* Future authentication mechanisms
-
-Authentication metadata should never appear inside AIRTP protocol payloads.
-
----
-
-# 12. Message Flow
-
-Transport implementations move serialized messages only.
-
-```text
-AIRTP Message
-
-      │
-
-Serialize
-
-      │
-
-Transport.send()
-
-      │
-
-Network
-
-      │
-
-Transport.receive()
-
-      │
-
-Deserialize
-
-      │
-
-AIRTP Message
-```
-
-The transport layer does not inspect application payloads.
-
----
-
-# 13. Reliability
-
-AIRTP delegates transport reliability to the selected implementation.
-
-Typical transport guarantees may include:
-
-* ordered delivery
-* reliable delivery
-* encrypted communication
-* retransmission
-* connection recovery
-
-The protocol remains independent of these implementation details.
-
----
-
-# 14. Error Handling
-
-Transport errors should be reported without modification.
-
-Examples include:
-
-Connection Refused
-
-Timeout
-
-TLS Failure
-
-Authentication Failure
-
-Connection Reset
-
-Network Unreachable
-
-Protocol Upgrade Failure
-
-Applications determine appropriate recovery strategies.
-
----
-
-# 15. Shutdown
-
-Orderly shutdown should follow:
-
-```text
-Application
-
-      │
-
-Session Close
-
-      │
-
-Transport.close()
-
-      │
-
-Flush Pending Data
-
-      │
-
-Close Connection
-
-      │
-
-Release Resources
-```
-
-Transport implementations should ensure resources are released even when failures occur.
-
----
-
-# 16. Provider Adapters
-
-Provider adapters operate above the transport layer.
-
-Example:
-
-```text
-Application
-
-      │
-
-AIRTP Session
-
-      │
-
-Provider Adapter
-
-      │
-
-Transport
-
-      │
-
-Provider
-```
-
-The transport remains unaware of provider-specific protocols.
-
----
-
-# 17. Reference Transport API
-
-A reference transport implementation may resemble:
+Every transport implementation exposes the same public interface.
 
 ```python
 class Transport:
@@ -460,47 +103,287 @@ class Transport:
         ...
 ```
 
-Transport subclasses implement provider-specific communication while preserving the public interface.
+The Session and Provider Adapter depend only on this interface.
+
+Transport implementations remain interchangeable.
 
 ---
 
-# 18. Extensibility
+# 5. Transport Lifecycle
 
-Future transport implementations may add support for:
+Every transport follows the same lifecycle.
+
+```text
+Transport Created
+        │
+        ▼
+Configuration Loaded
+        │
+        ▼
+Connect()
+        │
+        ▼
+Connected
+        │
+        ▼
+Send / Receive
+        │
+        ▼
+Close()
+        │
+        ▼
+Disconnected
+```
+
+The lifecycle remains consistent regardless of the underlying transport technology.
+
+---
+
+# 6. Connection State
+
+Transport implementations should maintain explicit connection state.
+
+Recommended states include:
+
+```text
+DISCONNECTED
+
+CONNECTING
+
+CONNECTED
+
+CLOSING
+
+CLOSED
+
+FAILED
+```
+
+Explicit state simplifies debugging, recovery, and lifecycle management.
+
+---
+
+# 7. Transport Independence
+
+AIRTP intentionally avoids dependence upon any networking technology.
+
+Possible implementations include:
+
+* WebSocket
+* HTTP Streaming
+* TCP
+* Unix Domain Socket
+* Named Pipe
+* Local IPC
+* Shared Memory
+* Future transports
+
+Applications remain unchanged when replacing one transport with another.
+
+---
+
+# 8. WebSocket Transport
+
+The reference implementation currently communicates using secure WebSockets.
+
+Typical responsibilities include:
+
+* establishing TLS connections
+* performing the WebSocket handshake
+* transmitting serialized protocol messages
+* receiving provider messages
+* orderly connection shutdown
+
+All WebSocket-specific behavior remains confined to the transport implementation.
+
+---
+
+# 9. Local Transport
+
+AIRTP also supports transports that communicate directly with local runtimes.
+
+Example:
+
+```text
+Application
+      │
+      ▼
+AIRTP Session
+      │
+      ▼
+Provider Adapter
+      │
+      ▼
+Local Transport
+      │
+      ▼
+Local AI Runtime
+```
+
+The remainder of the AIRTP architecture remains unchanged.
+
+---
+
+# 10. Authentication
+
+Authentication belongs to the transport layer.
+
+Possible authentication mechanisms include:
+
+* API keys
+* OAuth tokens
+* Mutual TLS
+* Local authentication
+* Future authentication methods
+
+Authentication metadata is transmitted during connection establishment and must never be embedded within AIRTP protocol payloads.
+
+---
+
+# 11. Message Flow
+
+The transport layer moves serialized messages without interpreting them.
+
+```text
+AIRTP Envelope
+       │
+       ▼
+Serialize
+       │
+       ▼
+Transport.send()
+       │
+       ▼
+Communication Channel
+       │
+       ▼
+Transport.receive()
+       │
+       ▼
+Deserialize
+       │
+       ▼
+AIRTP Envelope
+```
+
+Transport implementations do not inspect or modify application payloads.
+
+---
+
+# 12. Reliability
+
+Reliability characteristics are provided by the selected transport implementation.
+
+Typical guarantees may include:
+
+* ordered delivery
+* reliable delivery
+* encrypted communication
+* automatic retransmission
+* connection recovery
+
+AIRTP does not require any specific reliability mechanism.
+
+---
+
+# 13. Error Handling
+
+Transport implementations report communication failures without interpreting protocol behavior.
+
+Examples include:
+
+* connection refused
+* timeout
+* TLS failure
+* authentication failure
+* network unavailable
+* connection reset
+* handshake failure
+
+Higher protocol layers determine how recovery should occur.
+
+---
+
+# 14. Shutdown
+
+Orderly shutdown follows a predictable sequence.
+
+```text
+Application
+      │
+      ▼
+Session Close
+      │
+      ▼
+Provider Shutdown
+      │
+      ▼
+Transport.close()
+      │
+      ▼
+Flush Pending Data
+      │
+      ▼
+Release Resources
+      │
+      ▼
+Disconnected
+```
+
+Transport implementations should release resources even when failures occur.
+
+---
+
+# 15. Security Considerations
+
+Transport implementations should:
+
+* verify remote identities
+* validate TLS certificates
+* encrypt communication
+* protect authentication credentials
+* avoid logging sensitive information
+* fail securely
+
+Provider credentials, bearer tokens, and authentication material should never appear inside AIRTP protocol payloads.
+
+---
+
+# 16. Extensibility
+
+Future transport implementations may provide:
 
 * compression
+* adaptive buffering
 * connection pooling
 * multiplexing
 * protocol upgrades
-* adaptive buffering
 * transport metrics
 * congestion awareness
 * distributed routing
 
-These features should remain transparent to applications using the transport interface.
+These features should remain transparent to applications using the AIRTP Session interface.
 
 ---
 
-# 19. Security Considerations
+# 17. Reference Implementation
 
-Implementations should:
+The AIRTP reference implementation currently includes a WebSocket transport used by provider adapters.
 
-* verify remote identities
-* validate certificates
-* encrypt communication
-* protect credentials
-* avoid logging secrets
-* implement graceful failure handling
+Additional transports can be implemented by conforming to the Transport interface without modifying the Session or Provider Adapter layers.
 
-API keys, bearer tokens, and authentication material should be stored securely and excluded from logs whenever practical.
+This separation enables experimentation with new communication technologies while preserving application compatibility.
 
 ---
 
-# 20. Guiding Principle
+# 18. Guiding Principle
 
-The transport layer exists to move bytes—not to understand them.
+> The transport layer exists to move bytes—not to understand them.
 
-By separating transport mechanics from protocol semantics, AIRTP allows session management, capability negotiation, and AI provider integration to evolve independently of the underlying communication technology.
+The transport implementation establishes communication, authenticates with remote endpoints, and transfers serialized protocol messages.
 
-This separation enables the same application and protocol implementation to operate across multiple transports while maintaining a consistent programming model, reducing coupling, improving portability, and encouraging interoperability across AI ecosystems.
+Protocol semantics belong to the AIRTP Session.
 
+Provider behavior belongs to the Provider Adapter.
+
+By maintaining these boundaries, AIRTP achieves transport independence, provider independence, and a consistent programming model for AI applications.
