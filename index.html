@@ -2,257 +2,256 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AIRTP — AIRTP Intelligent Real-Time Transport Protocol</title>
-<meta name="description" content="AIRTP: a transport abstraction layer enabling provider-independent AI applications.">
+<meta name="description" content="AIRTP: a protocol layer that separates AI applications from provider-specific APIs and transport layers.">
 <style>
-:root{
---bg:#0b0f14;
---panel:#131a22;
---panel2:#1a2330;
---line:#2f3d4d;
---text:#eef3fb;
---muted:#9aa9ba;
---accent:#4fc3f7;
---accent2:#74ffb3;
---warn:#ffc857;
---radius:16px;
---shadow:0 12px 36px rgba(0,0,0,.35);
---mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
---sans:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+:root {
+  --bg: #0b0f14;
+  --panel: #131a22;
+  --panel2: #1a2330;
+  --line: #2f3d4d;
+  --text: #eef3fb;
+  --muted: #9aa9ba;
+  --accent: #4fc3f7;
+  --accent2: #74ffb3;
+  --warn: #ffc857;
+  --radius: 16px;
+  --shadow: 0 12px 36px rgba(0,0,0,.35);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
 }
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{
-margin:0;
-background:linear-gradient(180deg,#0b0f14,#101722);
-color:var(--text);
-font-family:var(--sans);
-line-height:1.6;
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #0b0f14, #101722);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.6;
 }
-a{
-color:var(--accent);
-text-decoration:none;
+a {
+  color: var(--accent);
+  text-decoration: none;
 }
-a:hover{text-decoration:underline}
-header{
-position:sticky;
-top:0;
-z-index:100;
-backdrop-filter:blur(10px);
-background:rgba(11,15,20,.75);
-border-bottom:1px solid rgba(255,255,255,.06);
+a:hover { text-decoration: underline; }
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  background: rgba(11,15,20,.75);
+  border-bottom: 1px solid rgba(255,255,255,.06);
 }
-nav{
-max-width:1200px;
-margin:auto;
-padding:14px 24px;
-display:flex;
-justify-content:space-between;
-align-items:center;
+nav {
+  max-width: 1200px;
+  margin: auto;
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-nav .logo{
-font-weight:700;
-letter-spacing:.08em;
+nav .logo {
+  font-weight: 700;
+  letter-spacing: .08em;
 }
-nav ul{
-display:flex;
-gap:18px;
-list-style:none;
-margin:0;
-padding:0;
-font-size:.92rem;
+nav ul {
+  display: flex;
+  gap: 18px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: .92rem;
 }
-main{
-max-width:1200px;
-margin:auto;
-padding:48px 22px 80px;
+main {
+  max-width: 1200px;
+  margin: auto;
+  padding: 48px 22px 80px;
 }
-section{
-margin:70px 0;
+section {
+  margin: 70px 0;
 }
-.hero{
-display:grid;
-grid-template-columns:1.2fr 1fr;
-gap:48px;
-align-items:center;
+.hero {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 48px;
+  align-items: center;
 }
-.hero h1{
-margin:0;
-font-size:3.2rem;
-line-height:1.05;
+.hero h1 {
+  margin: 0;
+  font-size: 3.2rem;
+  line-height: 1.05}
+.hero p {
+  color: var(--muted);
+  font-size: 1.1rem;
 }
-.hero p{
-color:var(--muted);
-font-size:1.1rem;
+.card {
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
 }
-.card{
-background:var(--panel);
-border:1px solid rgba(255,255,255,.06);
-border-radius:var(--radius);
-padding:22px;
-box-shadow:var(--shadow);
+.grid {
+  display: grid;
+  gap: 22px;
 }
-.grid{
-display:grid;
-gap:22px;
+.grid.two {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
-.grid.two{
-grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+.grid.three {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
-.grid.three{
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+h2 {
+  font-size: 2rem;
+  margin: 0 0 16px;
 }
-h2{
-font-size:2rem;
-margin:0 0 16px;
+h3 {
+  margin-top: 0;
 }
-h3{
-margin-top:0;
+.badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(79,195,247,.12);
+  border: 1px solid rgba(79,195,247,.3);
+  color: var(--accent);
+  font-size: .8rem;
+  margin-bottom: 18px;
 }
-.badge{
-display:inline-block;
-padding:6px 10px;
-border-radius:999px;
-background:rgba(79,195,247,.12);
-border:1px solid rgba(79,195,247,.3);
-color:var(--accent);
-font-size:.8rem;
-margin-bottom:18px;
+.stat {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent2);
 }
-.stat{
-font-size:2rem;
-font-weight:700;
-color:var(--accent2);
+.code {
+  font-family: var(--mono);
+  font-size: .92rem;
+  background: #0e141c;
+  padding: 12px;
+  border-radius: 10px;
+  overflow: auto;
+  border: 1px solid rgba(255,255,255, .05);
 }
-.code{
-font-family:var(--mono);
-font-size:.92rem;
-background:#0e141c;
-padding:12px;
-border-radius:10px;
-overflow:auto;
-border:1px solid rgba(255,255,255,.05);
+.diagram {
+  background: linear-gradient(180deg, var(--panel), var(--panel2));
+  border-radius: 18px;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.06);
 }
-.diagram{
-background:linear-gradient(180deg,var(--panel),var(--panel2));
-border-radius:18px;
-padding:18px;
-border:1px solid rgba(255,255,255,.06);
+svg {
+  width: 100%;
+  height: auto;
+  display: block;
 }
-svg{
-width:100%;
-height:auto;
-display:block;
+.layer {
+  fill: #1a2430;
+  stroke: #4fc3f7;
+  stroke-width: 2;
+  rx: 12;
 }
-.layer{
-fill:#1a2430;
-stroke:#4fc3f7;
-stroke-width:2;
-rx:12;
+.arrow {
+  stroke: #74ffb3;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 8 8;
+  animation: flow 2.2s linear infinite;
 }
-.arrow{
-stroke:#74ffb3;
-stroke-width:3;
-fill:none;
-stroke-linecap:round;
-stroke-dasharray:8 8;
-animation:flow 2.2s linear infinite;
+.node {
+  fill: #253244;
+  stroke: #6bd5ff;
+  stroke-width: 2;
 }
-.node{
-fill:#253244;
-stroke:#6bd5ff;
-stroke-width:2;
+.nodeText {
+  fill: white;
+  font-size: 14px;
+  font-family: var(--sans);
+  text-anchor: middle;
+  dominant-baseline: middle;
 }
-.nodeText{
-fill:white;
-font-size:14px;
-font-family:var(--sans);
-text-anchor:middle;
-dominant-baseline:middle;
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+  transform-origin: center;
 }
-.pulse{
-animation:pulse 2s ease-in-out infinite;
-transform-origin:center;
+.timeline {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-.timeline{
-display:flex;
-gap:12px;
-flex-wrap:wrap;
+.step {
+  flex: 1;
+  min-width: 140px;
+  background: #111822;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255, .05);
+  transition: .25s;
 }
-.step{
-flex:1;
-min-width:140px;
-background:#111822;
-padding:14px;
-border-radius:12px;
-border:1px solid rgba(255,255,255,.05);
-transition:.25s;
+.step:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
 }
-.step:hover{
-transform:translateY(-4px);
-border-color:var(--accent);
+kbd {
+  background: #1b2633;
+  padding: 3px 6px;
+  border-radius: 6px;
+  font-family: var(--mono);
 }
-kbd{
-background:#1b2633;
-padding:3px 6px;
-border-radius:6px;
-font-family:var(--mono);
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .95rem;
 }
-table{
-width:100%;
-border-collapse:collapse;
-font-size:.95rem;
+th, td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255,255,255, .08);
+  text-align: left;
 }
-th,td{
-padding:10px;
-border-bottom:1px solid rgba(255,255,255,.08);
-text-align:left;
+th {
+ color: var(--accent);
 }
-th{
-color:var(--accent);
+.highlight {
+  color: var(--accent2);
 }
-.highlight{
-color:var(--accent2);
+footer {
+  margin-top: 90px;
+  padding: 40px 0;
+  border-top: 1px solid rgba(255,255,255, .08);
+  color: var(--muted);
 }
-footer{
-margin-top:90px;
-padding:40px 0;
-border-top:1px solid rgba(255,255,255,.08);
-color:var(--muted);
+.button {
+  display: inline-block;
+  padding: 12px 18px;
+  background: var(--accent);
+  color: #071018;
+  font-weight: 700;
+  border-radius: 10px;
+  margin-top: 10px;
+  transition: .25s;
 }
-.button{
-display:inline-block;
-padding:12px 18px;
-background:var(--accent);
-color:#071018;
-font-weight:700;
-border-radius:10px;
-margin-top:10px;
-transition:.25s;
+.button:hover {
+  transform: translateY(-2px);
+  text-decoration: none;
 }
-.button:hover{
-transform:translateY(-2px);
-text-decoration:none;
+@keyframes flow {
+  from { stroke-dashoffset: 32; }
+  to { stroke-dashoffset: 0; }
 }
-@keyframes flow{
-from{stroke-dashoffset:32}
-to{stroke-dashoffset:0}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .45; }
 }
-@keyframes pulse{
-0%,100%{opacity:1}
-50%{opacity:.45}
-}
-@media(max-width:900px){
-.hero{
-grid-template-columns:1fr;
-}
-nav ul{
-display:none;
-}
-.hero h1{
-font-size:2.4rem;
-}
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+  nav ul {
+    display: none;
+  }
+  .hero h1 {
+    font-size: 2.4rem;
+  }
 }
 </style>
 </head>
@@ -262,7 +261,7 @@ font-size:2.4rem;
 <nav>
 <div class="logo">AIRTP</div>
 <ul>
-<li><a href="#tldr">TL;DR</a></li>
+<li><a href="#tldr">TLDR;</a></li>
 <li><a href="#architecture">Architecture</a></li>
 <li><a href="#flow">Flow</a></li>
 <li><a href="#providers">Providers</a></li>
@@ -290,15 +289,11 @@ Many AI providers.
 </h1>
 
 <p>
-AIRTP is a transport abstraction layer that separates application logic
-from AI providers. Applications communicate with a consistent session
-layer while provider adapters translate requests into provider-specific
-protocols. Swapping providers becomes a configuration decision rather
-than a rewrite.
+AIRTP is a protocol layer that isolates application logic from both AI providers and transport details. Applications communicate with a consistent session interface. Provider adapters translate requests into provider-specific APIs, while the transport layer handles reliable message delivery. Switching providers or transports requires no changes to application code.
 </p>
 
 <a class="button" href="#tldr">
-Start with the TL;DR
+Start with the TLDR;
 </a>
 
 </div>
@@ -338,7 +333,7 @@ Start with the TL;DR
 
 <section id="tldr">
 
-<h2>TL;DR</h2>
+<h2>TLDR;</h2>
 
 <div class="grid three">
 
@@ -346,8 +341,7 @@ Start with the TL;DR
 <div class="stat">1 API</div>
 <h3>Provider Independence</h3>
 <p>
-Application code targets AIRTP rather than a vendor SDK. Adapters map
-AIRTP semantics onto each provider.
+Application code targets the AIRTP protocol—not a vendor SDK. Adapters map AIRTP semantics to each provider.
 </p>
 </div>
 
@@ -355,8 +349,7 @@ AIRTP semantics onto each provider.
 <div class="stat">N Transports</div>
 <h3>Transport Independence</h3>
 <p>
-HTTP, WebSocket, local processes, pipes, or future transports all fit
-behind a consistent session interface.
+WebSocket, HTTP, local IPC, pipes, or future transports all fit behind a consistent session interface.
 </p>
 </div>
 
@@ -364,8 +357,7 @@ behind a consistent session interface.
 <div class="stat">Streaming</div>
 <h3>Protocol Features</h3>
 <p>
-Capability negotiation, message envelopes, streaming, chunking, and
-reassembly are protocol concepts instead of provider-specific code.
+Capability negotiation, envelopes, streaming, chunking, and reassembly are protocol concepts—not provider-specific code.
 </p>
 </div>
 
@@ -421,17 +413,15 @@ Pattern
 <div class="card">
 
 <p>
-Each layer has a single responsibility. Select a layer in the diagram to
-highlight its role and observe how AIRTP isolates application logic from
-provider-specific implementations.
+Each layer has a single responsibility. Select a layer in the diagram to explore its role and better understand how AIRTP separates application logic from provider-specific implementations.
 </p>
 
 <ul>
-<li><strong>Application</strong> — business logic and prompts.</li>
-<li><strong>Session Layer</strong> — lifecycle, routing, state.</li>
-<li><strong>Provider Adapter</strong> — translates AIRTP into provider APIs.</li>
-<li><strong>Transport</strong> — HTTP, WebSocket, IPC, or future transports.</li>
-<li><strong>AI Provider</strong> — executes inference.</li>
+<li><strong>Application</strong> — business logic, workflows, and prompts.</li>
+<li><strong>Session Layer</strong> — session lifecycle, routing, streaming state.</li>
+<li><strong>Provider Adapter</strong> — translates AIRTP messages into provider APIs.</li>
+<li><strong>Transport</strong> — WebSocket, HTTP, local IPC, or future transports.</li>
+<li><strong>AI Provider</strong> — the endpoint performing inference.</li>
 </ul>
 
 <div class="code" id="layerDescription">
@@ -456,7 +446,7 @@ Application
 
 <rect class="layer selectableLayer"
 data-name="Session Layer"
-data-desc="Maintains sessions, streaming state, negotiation and routing."
+data-desc="Manages session lifecycle, streaming state, negotiation, and message routing."
 x="90" y="120" width="340" height="60"/>
 
 <text class="nodeText" x="260" y="150">
@@ -467,7 +457,7 @@ AIRTP Session Layer
 
 <rect class="layer selectableLayer"
 data-name="Provider Adapter"
-data-desc="Maps AIRTP messages into provider-native requests."
+data-desc="Adapts AIRTP messages to provider-specific formats and events."
 x="90" y="220" width="340" height="60"/>
 
 <text class="nodeText" x="260" y="250">
@@ -478,7 +468,7 @@ Provider Adapter
 
 <rect class="layer selectableLayer"
 data-name="Transport"
-data-desc="Carries serialized protocol messages."
+data-desc="Moves serialized protocol messages reliably over chosen communication channels."
 x="90" y="320" width="340" height="60"/>
 
 <text class="nodeText" x="260" y="350">
@@ -489,7 +479,7 @@ Transport
 
 <rect class="layer selectableLayer"
 data-name="AI Provider"
-data-desc="The endpoint performing inference."
+data-desc="Executes inference and returns results, isolated from application logic."
 x="90" y="430" width="340" height="60"/>
 
 <text class="nodeText" x="260" y="460">
@@ -513,9 +503,7 @@ AI Provider
 <div class="card">
 
 <p>
-AIRTP represents communication as structured protocol messages rather
-than direct provider SDK calls. Requests travel downward through the
-stack and streamed responses travel back upward using the same session.
+AIRTP represents communication through structured protocol messages—not direct provider SDK calls. Requests travel downward through the stack while streamed responses move upward through the same session.
 </p>
 
 <div class="timeline">
@@ -543,8 +531,7 @@ Receive Stream
 
 <div class="step">
 5.<br>
-Complete
-Session
+Complete Session
 </div>
 
 </div>
@@ -611,9 +598,7 @@ fill="#74ffb3"/>
 <div class="card">
 
 <p>
-AIRTP applications target a stable protocol instead of a vendor SDK.
-Provider-specific differences are isolated inside adapters, allowing
-applications to switch providers without changing business logic.
+Applications communicate with a stable protocol—not a vendor SDK. Adapters isolate provider-specific differences, allowing seamless provider switching without changes to business logic.
 </p>
 
 <table>
@@ -684,8 +669,7 @@ Adapter
 </div>
 
 <p>
-Adding a new provider requires implementing an adapter rather than
-modifying application code.
+Adding a new provider requires implementing an adapter—not changing application code.
 </p>
 
 </div>
@@ -703,9 +687,7 @@ modifying application code.
 <div class="card">
 
 <p>
-The AIRTP protocol is independent of the underlying transport.
-Reliable message delivery, streaming, and session semantics remain
-consistent regardless of how bytes move between peers.
+AIRTP is transport-agnostic. Message delivery, streaming, and session semantics remain consistent regardless of how bytes move between peers.
 </p>
 
 <div class="timeline">
@@ -731,8 +713,7 @@ Local IPC
 </div>
 
 <div class="step">
-Future
-Transport
+Future Transport
 </div>
 
 </div>
@@ -808,9 +789,7 @@ IPC
 <div class="card">
 
 <p>
-Capabilities are exchanged during session establishment. Applications
-express requirements while adapters advertise supported features. The
-result is a negotiated feature set shared by both endpoints.
+Capabilities are negotiated at session initialization. Applications express requirements, and adapters advertise supported features. This negotiation results in a mutually accepted feature set.
 </p>
 
 <table>
@@ -875,8 +854,7 @@ Provider Adapter
 Negotiated Session</code></pre>
 
 <p>
-Negotiation allows AIRTP to expose the strongest common feature set
-without requiring application changes for each provider.
+Negotiation enables AIRTP to expose the strongest common feature set without requiring application changes for each provider.
 </p>
 
 </div>
@@ -893,9 +871,7 @@ without requiring application changes for each provider.
 <div class="card">
 
 <p>
-Every AIRTP exchange is represented as a structured message envelope.
-Metadata remains separate from payload data, allowing adapters to
-translate protocol semantics without altering application intent.
+Every AIRTP exchange is represented as a structured envelope. Metadata is separate from the application payload, allowing adapters to translate semantics while preserving the user’s intent.
 </p>
 
 <div class="code">
@@ -952,9 +928,8 @@ translate protocol semantics without altering application intent.
 <div class="card">
 
 <p>
-Large payloads and streaming responses are transmitted as ordered chunks.
-The session layer tracks sequence numbers, detects completion, and
-reassembles messages before presenting them to the application.
+Large payloads and streamed responses are transported in ordered
+chunks. The session layer tracks sequence numbers, verifies completion, and reassembles messages before delivering them to the application.
 </p>
 
 <div class="timeline">
@@ -1004,11 +979,11 @@ d="M60 150 C60 210 505 210 505 165"/>
 <h3>Why chunk?</h3>
 
 <ul>
-<li>Supports arbitrarily large responses.</li>
-<li>Allows progressive streaming to the application.</li>
+<li>Handles arbitrarily large responses.</li>
+<li>Enables progressive streaming to the application.</li>
 <li>Improves resilience across diverse transports.</li>
-<li>Provides deterministic ordering using sequence numbers.</li>
-<li>Enables resumable session semantics.</li>
+<li>Provides deterministic ordering with sequence numbers.</li>
+<li>Enables resumable sessions.</li>
 </ul>
 
 </div>
@@ -1024,9 +999,7 @@ d="M60 150 C60 210 505 210 505 165"/>
 <h3>AIRTP</h3>
 
 <p>
-An educational reference implementation demonstrating how AI
-applications can remain independent of providers, transports, and
-vendor-specific SDKs through a layered protocol architecture.
+An educational reference implementation demonstrating how AI applications can remain independent of providers and transports through a layered protocol architecture.
 </p>
 
 </div>
@@ -1043,8 +1016,7 @@ vendor-specific SDKs through a layered protocol architecture.
 </p>
 
 <p>
-Built as a single self-contained HTML document for GitHub Pages with
-embedded CSS, SVG, and vanilla JavaScript.
+Built as a single document for GitHub Pages with embedded CSS, SVG, and vanilla JavaScript.
 </p>
 
 </div>
@@ -1062,15 +1034,11 @@ embedded CSS, SVG, and vanilla JavaScript.
 
   const layerMap = {
     "Application":
-      "Business logic, prompts, tools, and workflows depend only on AIRTP.",
+      "Business logic, prompts, tools, and workflows rely only on AIRTP.",
     "Session Layer":
       "Owns session lifecycle, streaming state, routing, negotiation, and message ordering.",
     "Provider Adapter":
-      "Translates AIRTP protocol messages into provider-specific APIs and converts responses back.",
-    "Transport":
-      "Moves serialized protocol messages across HTTP, WebSocket, IPC, pipes, or future transports.",
-    "AI Provider":
-      "Executes inference while remaining isolated from application code."
+      "Translates AIRTP protocol messages into provider-specific APIs and convertsresponses back."
   };
 
   document.querySelectorAll(".selectableLayer").forEach(layer => {
@@ -1166,7 +1134,7 @@ embedded CSS, SVG, and vanilla JavaScript.
   yearNode.textContent =
     "© " +
     new Date().getFullYear() +
-    " AIRTP — AI Real-Time Transport Protocol";
+    " AIRTP — AIRTP Intelligent Real-Time Transport Protocol";
   document.querySelector("footer").appendChild(yearNode);
 
 })();

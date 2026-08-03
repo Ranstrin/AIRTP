@@ -1,7 +1,5 @@
 # AIRTP Architecture
 
----
-
 # Overview
 
 The AI Realtime Transport Protocol (AIRTP) is a session-oriented communication layer that separates AI applications from provider-specific APIs and transport implementations.
@@ -31,7 +29,6 @@ The result is a layered architecture with clear boundaries between responsibilit
                           │
                           ▼
                   AIRTP Session API
-                          │
           ┌───────────────┴───────────────┐
           ▼                               ▼
  Capability Negotiation           Logical Message Flow
@@ -148,7 +145,7 @@ Remote Provider
 
 Responses follow the reverse path.
 
-If the provider streams multiple transport messages, AIRTP assembles them internally before returning a complete logical response unless the application explicitly requests streaming.
+If the providerstreams multiple transport messages, AIRTP assembles them internally before returning a complete logical response unless the application explicitly requests streaming.
 
 ---
 
@@ -357,14 +354,85 @@ Provider credentials remain transport metadata and are never embedded inside AIR
 
 ---
 
+# AIRTP.py
+
+The file `AIRTP.py` provides a single-file reference implementation of the AIRTP protocol. It demonstrates a concrete realization of the layered architecture, each component performing its defined role while adhering to the guiding principle: applications communicate with a protocol, not with a provider.
+
+## Key Elements in AIRTP.py
+
+### Session Management
+
+In `AIRTP.py`, the class `AIRTPSession` represents the session layer. It handles:
+
+* transport connection management
+* initial capability negotiation
+* envelope construction via the `EnvelopeFactory`
+* initialization of the provider adapter
+
+All application interactions begin here, and the session ensures that communication flows according to the protocol sequence.
+
+### Provider Adapter
+
+The `OpenAIRealtimeAdapter` class acts as the provider adapter. It isolates OpenAI-specific API behavior, including:
+
+* sending the initial protocol contract as part of capability negotiation
+* serializing user messages into OpenAI’s expected request format
+* issuing continuation requests when the AIRTP runtime determines that a response is incomplete
+
+This adapter encapsulates all OpenAI-specific logic, allowing the rest of the AIRTP stack to remain provider-agnostic.
+
+### Transport Implementation
+
+The `WebSocketTransport` class implements the transport layer using WebSocket over TLS. It handles:
+
+* establishing secure WebSocket connections
+* adding the appropriate authorization headers
+* sending and receiving raw messages
+* managing connection lifecycle, including closing the WebSocket gracefully
+
+The transport layer in `AIRTP.py` is unaware of the protocol semantics, focusing solely on reliable message delivery.
+
+### Runtime State Machine
+
+The `AIRTPRuntime` coordinates the execution of a single logical request. It implements the AIRTP state machine, managing:
+
+* the active/complete runtime state
+* detection of provider output termination
+* issuing continuation requests whenever the logical artifact is incomplete
+* delivering received logical segments to the requester in order
+
+The runtime does not interpret semantics; it only enforces the protocol’s logical artifact continuity rules.
+
+### Chunking and Envelope Management
+
+The `ChunkManager` deals with splitting large messages into chunks and reassembling them. It ensures that the transport can handle large payloads by breaking them downinto smaller segments and combining them back into a single logical message before delivery to the requester.
+
+The `EnvelopeFactory` constructs protocol-compliant message envelopes. Each envelope contains metadata, such as message IDs, chunk visibility, and semantic roles, ensuring consistency across the logical message flow.
+
+---
+
+# AIRTP.py Execution Flow
+
+When `AIRTP.py` runs, it performs the following sequence:
+
+1. The `WebSocketTransport` establishes a secure connection to the provider endpoint.
+2. The `OpenAIRealtimeAdapter` sends the AIRTP protocol contract and negotiates capabilities with the provider.
+3. The user provides input, either interactively or via standard input.
+4. The `AIRTPRuntime` splits the input into chunks, assembles them into a logical request, and sends it via the provider adapter.
+5. The WebSocket transport receives streaming deltas from the provider, and the runtime writes them to standard output.
+6. If the provider stops before the logical artifact is complete, the runtime issues continuation requests until the completion marker `<END>` is received.
+7. Once the complete logical artifact is delivered, the runtime transitions to the completed state and the session can gracefully shut down.
+
+---
+
+# Single-File Integration
+
+`AIRTP.py` integrates multiple layers into a single, concise file. This design makes the protocol, capability negotiation, transport, and provider adapter all easily accessible while maintaining a clear separation of responsibilities.
+
+---
+
 # Guiding Principle
 
 AIRTP treats AI communication as a protocol engineering problem rather than a provider integration problem.
 
-Applications depend only on the AIRTP session interface.
-
-Provider adapters isolate vendor-specific APIs.
-
-Transport implementations isolate networking details.
-
-By maintaining these boundaries, AIRTP enables interoperable AI communication while allowing transports, providers, and protocol implementations to evolve independently.
+`AIRTP.py` embodies this principle by enforcing protocol-layer behavior, allowing providers and transports to evolve independently. By maintaining clear boundaries between layers, the protocol provides stable, consistent communication for AI applications while supporting future extensibility. 
