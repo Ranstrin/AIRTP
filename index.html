@@ -652,20 +652,22 @@ Applications communicate with a stable protocol—not a vendor SDK. Adapters iso
 <div class="card">
 
 <div class="code">
-Application
-      │
-      ▼
-send(envelope)
-      │
-      ▼
-AIRTP Session
-      │
-      ▼
-Adapter
-      ├── Provider A
-      ├── Provider B
-      ├── Provider C
-      └── Future Provider
+  <pre>
+    Application
+          │
+          ▼
+    send(envelope)
+          │
+          ▼
+    AIRTP Session
+          │
+          ▼
+    Adapter
+          ├── Provider A
+          ├── Provider B
+          ├── Provider C
+          └── Future Provider
+  </pre>
 </div>
 
 <p>
