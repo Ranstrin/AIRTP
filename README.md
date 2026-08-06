@@ -120,10 +120,10 @@ The response will stream back through standard output, assembling the complete l
 To run a request from a file or piped input:
 
 ```bash
-CAT <<EOF | python3 AIRTP.py | tee outfile
+cat <<EOF | python3 AIRTP.py | tee outfile
 explain photosynthesis
-formatTemplate = $(cat ./formatTemplate)
-format it into a 5 topic using the formatTemplate
+formatTemplate = {{{ $(cat ./formatTemplate) }}}
+format it into a 5 topic essay using the formatTemplate
 EOF
 ```
 
