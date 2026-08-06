@@ -105,7 +105,7 @@ Each layer communicates only with the layer immediately below it. This separatio
 To use the single-file implementation, place your OpenAI API key in an environment variable or pass it via command line:
 
 ```bash
-export OPENAI_API_KEY="your_api_key_here"
+export OPENAI_API_KEY="$(~/.AIRTP_KEYS/provider_key)"
 python3 AIRTP.py
 ```
 
@@ -120,7 +120,11 @@ The response will stream back through standard output, assembling the complete l
 To run a request from a file or piped input:
 
 ```bash
-echo "Explain photosynthesis." | python3 AIRTP.py
+CAT <<EOF | python3 AIRTP.py | tee outfile
+explain photosynthesis
+formatTemplate = $(./formatTemplate)
+format it into a 5 topic using the formatTemplate
+EOF
 ```
 
 ---
