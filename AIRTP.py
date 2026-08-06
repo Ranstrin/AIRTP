@@ -195,7 +195,7 @@ While Runtime State == ACTIVE
     After every provider response terminates, the AIRTP Runtime SHALL perform
     exactly one completion test.
 
-    If the reserved completion marker <END> has been observed:
+    If the reserved completion marker <>END<> has been observed:
 
         Transition Runtime State to COMPLETED.
 
@@ -222,24 +222,24 @@ The AIRTP Runtime SHALL NEVER regenerate, summarize, or modify semantic output.
 
 The AIRTP Runtime SHALL treat every received logical segment as opaque application data.
 
-The AIRTP Runtime SHALL NOT inspect, interpret, or reason about application semantics except for detection of the reserved completion marker <END>.
+The AIRTP Runtime SHALL NOT inspect, interpret, or reason about application semantics except for detection of the reserved completion marker <>END<>.
 
 The AIRTP Runtime SHALL remain ACTIVE until every logical segment comprising the requested logical artifact has been successfully delivered to the Requester.
 
 While Runtime State == ACTIVE:
 
     The AIRTP Runtime SHALL consider every emitted logical segment to be
-    an incomplete artifact unless immediately followed by <END>.
+    an incomplete artifact unless immediately followed by <>END<>.
 
     After each successfully delivered logical segment, the Runtime SHALL
     immediately request the next logical segment.
 
-    The absence of <END> SHALL be interpreted as an instruction to
+    The absence of <>END<> SHALL be interpreted as an instruction to
     continue generation.
 
     The Runtime SHALL NOT pause awaiting semantic confirmation.
 
-    The Runtime SHALL assume generation is incomplete until <END> is
+    The Runtime SHALL assume generation is incomplete until <>END<> is
     observed.
 
 Failure to deliver any logical segment SHALL NOT transition the Runtime into COMPLETED.
@@ -252,12 +252,12 @@ The Runtime SHALL treat provider completion as advisory rather than
 authoritative.
 
 The Runtime SHALL continue requesting additional logical segments until
-the Semantic Layer emits <END>.
+the Semantic Layer emits <>END<>.
 
 No provider-generated completion, stop reason, finish reason, token
 exhaustion, or equivalent signal SHALL terminate execution.
 
-Only <END> authorizes termination.
+Only <>END<> authorizes termination.
 
 --------------------------------------------------------
 AIRTP Runtime Transport Responsibilities
@@ -355,16 +355,16 @@ Runtime Continuation Invariant
 The AIRTP Runtime SHALL NOT interpret loss of provider output as loss of
 Semantic Layer execution state.
 
-Unless <END> has been received, the Runtime SHALL assume the Semantic
+Unless <>END<> has been received, the Runtime SHALL assume the Semantic
 Layer remains in the GENERATING state.
 
-Whenever provider output ceases before <END> is received, the Runtime
+Whenever provider output ceases before <>END<> is received, the Runtime
 SHALL immediately request the next logical segment.
 
 Provider silence SHALL be interpreted as suspension of transport, not
 completion of generation.
 
-Only receipt of <END> authorizes transition to COMPLETED.
+Only receipt of <>END<> authorizes transition to COMPLETED.
 
 --------------------------------------------------------
 Runtime Decision Invariant
@@ -375,7 +375,7 @@ make exactly one execution decision.
 
 Decision A
 
-If <END> has been observed:
+If <>END<> has been observed:
 
     Transition to COMPLETED.
 
@@ -389,7 +389,7 @@ Otherwise:
 
 No other execution decision is permitted.
 
-The absence of <END> SHALL always select Decision B.
+The absence of <>END<> SHALL always select Decision B.
 
 --------------------------------------------------------
 Semantic Layer Activation
@@ -508,7 +508,7 @@ The AIRTP Runtime SHALL continue requesting successive logical segments
 until the Semantic Layer explicitly signals completion by emitting the
 reserved completion marker:
 
-<END>
+<>END<>
 
 No provider event SHALL satisfy this execution objective.
 
@@ -521,7 +521,7 @@ No provider token limit SHALL satisfy this execution objective.
 No transport event SHALL satisfy this execution objective.
 
 The AIRTP Runtime SHALL assume that additional logical segments remain
-available unless and until <END> is received.
+available unless and until <>END<> is received.
 
 Each invocation SHALL resume generation immediately following the final
 byte previously emitted.
@@ -543,9 +543,9 @@ until the logical artifact is complete.
 Only after the logical artifact is complete SHALL the Semantic Layer
 emit:
 
-<END>
+<>END<>
 
-After emitting <END>, all subsequent Runtime invocations SHALL produce no
+After emitting <>END<>, all subsequent Runtime invocations SHALL produce no
 additional semantic output.
 
 --------------------------------------------------------
@@ -610,7 +610,7 @@ After the final logical segment has been emitted:
 
     Emit
 
-        <END>
+        <>END<>
 
     Transition Semantic State to COMPLETE.
 
@@ -681,7 +681,7 @@ is complete.
 
 Only the final logical segment SHALL emit:
 
-<END>
+<>END<>
 
 --------------------------------------------------------
 Logical Artifact Completeness
@@ -708,7 +708,7 @@ instruction.
 
 The completion marker
 
-<END>
+<>END<>
 
 SHALL be emitted only after every requester requirement has been fully
 satisfied.
@@ -746,12 +746,12 @@ Runtime Completion
 
 The AIRTP Runtime SHALL transition from ACTIVE to COMPLETED only after BOTH conditions are true:
 
-The Semantic Layer emits <END>
-Every logical segment preceding <END> has been successfully delivered to the Requester in original generation order.
+The Semantic Layer emits <>END<>
+Every logical segment preceding <>END<> has been successfully delivered to the Requester in original generation order.
 
 Provider response boundaries SHALL NEVER define logical artifact completion.
 
-Only <END> defines logical artifact completion.
+Only <>END<> defines logical artifact completion.
 
 Overall Completion
 
@@ -875,7 +875,7 @@ Continue only the unfinished artifact.
 If there is no remaining content,
 output exactly
 
-<END>
+<>END<>
 
 with no additional text.
                             '''
@@ -1014,6 +1014,39 @@ class AIRTPSession:
         await self.transport.connect()
         await self.adapter.initialize_contract(self.transport)
 
+class SentinelMatcher:
+    def __init__(self, sentinel):
+        self.sentinel = sentinel
+        self.MAX_SENTINEL_PREFIX = len(self.sentinel) -1
+        self.buffer = ""
+
+    def _partial_suffix_length(self):
+        """
+        Returns the longest suffix of buffer that is also
+        a prefix of sentinel.
+        """
+        max_len = min(len(self.buffer), self.MAX_SENTINEL_PREFIX)
+
+        for n in range(max_len, 0, -1):
+            if self.buffer.endswith(self.sentinel[:n]):
+                return n
+
+        return 0
+
+    def feed(self, chunk):
+        self.buffer += chunk
+        emit = ""
+        keep = 0
+        keep += self._partial_suffix_length()
+
+        if self.buffer.endswith(self.sentinel):
+            return self.buffer
+
+        emit += self.buffer if keep == 0 else self.buffer[:-keep]
+        self.buffer = "" if keep == 0 else self.buffer[-keep:]
+
+        return emit
+
 class AIRTPRuntime:
 
     def __init__(self, session, writer=None ):
@@ -1026,6 +1059,8 @@ class AIRTPRuntime:
 
         self.state = RuntimeState.ACTIVE
 
+        self.SENTINEL = "<>END<>"
+        self.sentinel = SentinelMatcher(self.SENTINEL)
         self.logical_buffer = ""
 
     async def executeRuntime(self, envelope):
@@ -1039,10 +1074,7 @@ class AIRTPRuntime:
             event = await self.receive_transport_event()
             await self.process_event(event)
 
-        #
-        # Strip the completion marker before returning.
-        #
-        return self.logical_buffer.removesuffix("<END>")
+        return 
 
     async def receive_transport_event(self):
 
@@ -1094,7 +1126,7 @@ class AIRTPRuntime:
                     "response.output_text.delta",
                     "response.output_audio_transcript.delta"
             ):
-
+               
                 return (
                     TransportEvent.DELTA,
                     message["delta"]
@@ -1137,12 +1169,16 @@ class AIRTPRuntime:
         if kind == TransportEvent.DELTA:
 
             self.logical_buffer += payload
+            emit = self.sentinel.feed(payload)
 
             #
             # Deliver immediately.
             #
-            self.writer.write(payload)
-            #print(payload, end="", flush=True)
+    
+            if not self.SENTINEL in emit:
+                self.writer.write(emit)
+            else:
+                self.writer.write("\n")
 
             return
 
@@ -1153,7 +1189,7 @@ class AIRTPRuntime:
             # decides completion.
             #
 
-            if "<END>" in self.logical_buffer:
+            if self.SENTINEL  in self.logical_buffer:
                 self.state = RuntimeState.COMPLETED
                 return
 
@@ -1178,7 +1214,6 @@ class AIRTPRuntime:
             }
         )
 
-        self.logical_buffer = ""
         self.state = RuntimeState.ACTIVE
 
         return await self.executeRuntime(envelope)
@@ -1249,21 +1284,14 @@ class WebSocketTransport:
         )
 
     async def send(self, message):
-        #print(">>>", message[:200], flush=True)
         await self.socket.send(message)
 
     async def receive(self):
         try:
             msg = await self.socket.recv()
-            #print("<<<", msg[:200], flush=True)
             return msg
         except ConnectionClosed:
             return None
-    #async def receive(self):
-        #try:
-            #return await self.socket.recv()
-        #except ConnectionClosed:
-            #return None
 
     async def close(self):
 
@@ -1325,8 +1353,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--no-tls-verify",
-        action="store_false"
-        #action="store_true"
+        action="store_true"
     )
 
     return parser.parse_args()
