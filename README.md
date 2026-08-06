@@ -122,7 +122,7 @@ To run a request from a file or piped input:
 ```bash
 CAT <<EOF | python3 AIRTP.py | tee outfile
 explain photosynthesis
-formatTemplate = $(./formatTemplate)
+formatTemplate = $(cat ./formatTemplate)
 format it into a 5 topic using the formatTemplate
 EOF
 ```
