@@ -1147,10 +1147,10 @@ class AIRTPRuntime:
 
             if event_type == "response.done":
 
-                    return (
-                        TransportEvent.PROVIDER_DONE,
-                        None
-                    )
+                return (
+                    TransportEvent.PROVIDER_DONE,
+                    None
+                )
 
             #
             # Ignore everything else.
