@@ -20,7 +20,11 @@ This will open an interactive console where the user can enter prompts and recei
 AIRTP.py can also execute commands piped into its standard input.
 
 ```bash
-$ echo "Explain quantum entanglement." | python3 AIRTP.py
+CAT <<EOF | python3 AIRTP.py | tee outfile
+Explain quantum entanglement
+formatTemplate = $(cat ./formatTemplate)
+format it into a 5 topic using the formatTemplate
+EOF
 ```
 
 The output will be streamed back to the terminal as soon as it arrives from the provider, maintaining a continuous logical artifact.
