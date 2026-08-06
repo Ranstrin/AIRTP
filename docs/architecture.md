@@ -2,7 +2,7 @@
 
 # Overview
 
-The AI Realtime Transport Protocol (AIRTP) is a session-oriented communication layer that separates AI applications from provider-specific APIs and transport implementations.
+The AIRTP Intelligent Realtime Transport Protocol (AIRTP) is a session-oriented communication layer that separates AI applications from provider-specific APIs and transport implementations.
 
 Rather than allowing applications to communicate directly with a provider, AIRTP introduces a stable protocol layer responsible for managing session state, capability negotiation, message framing, logical message assembly, and provider adaptation.
 
