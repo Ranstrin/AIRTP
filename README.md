@@ -1,4 +1,4 @@
-# AIRTP — AI Realtime Transport Protocol
+# AIRTP — AIRTP Intelligent Realtime Transport Protocol
 
 🌐 Project Website: https://www.airtp.com
 
