@@ -9,8 +9,8 @@ This document expands upon the original AIRTP examples by incorporating the sing
 AIRTP.py provides a self-contained executable session. After installation and configuration, it can be invoked directly from the command line.
 
 ```bash
-export OPENAI_API_KEY="$(cat ~/your_secure.key)"
-$ python3 AIRTP.py
+export OPENAI_API_KEY="$(~/.AIRTP_KEYS/provider_key)"
+python3 AIRTP.py
 ```
 
 This will open an interactive console where the user can enter prompts and receive AI-generated responses. The session automatically handles transport, provider interactions, and protocol compliance.
