@@ -9,8 +9,8 @@ This document expands upon the original AIRTP examples by incorporating the sing
 AIRTP.py provides a self-contained executable session. After installation and configuration, it can be invoked directly from the command line.
 
 ```bash
-export OPENAI_API_KEY="$(cat ~/your_secure.key)"
-$ python3 AIRTP.py
+export OPENAI_API_KEY="$(~/.AIRTP_KEYS/provider_key)"
+python3 AIRTP.py
 ```
 
 This will open an interactive console where the user can enter prompts and receive AI-generated responses. The session automatically handles transport, provider interactions, and protocol compliance.
@@ -20,7 +20,11 @@ This will open an interactive console where the user can enter prompts and recei
 AIRTP.py can also execute commands piped into its standard input.
 
 ```bash
-$ echo "Explain quantum entanglement." | python3 AIRTP.py
+CAT <<EOF | python3 AIRTP.py | tee outfile
+Explain quantum entanglement
+formatTemplate = $(cat ./formatTemplate)
+format it into a 5 topic using the formatTemplate
+EOF
 ```
 
 The output will be streamed back to the terminal as soon as it arrives from the provider, maintaining a continuous logical artifact.
